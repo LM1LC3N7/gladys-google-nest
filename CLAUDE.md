@@ -65,15 +65,21 @@ Pub/Sub gRPC client about 90 MB, in a 256 MB sandbox, for six REST calls.
   (`thermostat`, `camera`, `doorbell`, `display`) and the off-schema config
   keys (`oauth_refresh_token`…) are stored in user scenes, dashboards and
   configs. Never rename them.
-- **Local only, no hosted service**: authentication must work for anyone
-  with only a local Gladys. Never depend on Gladys Plus, on a server of the
-  author or on a third-party redirect page (no `oauth2` field: the core's
-  one goes through my.gladysassistant.com). The connection is the
-  `google_account_local` account_link field, Google's own redirect
-  `https://www.google.com`, and the address pasted into the
-  `finish_local_connection` action, which exchanges the code here. The
-  authorize URL is acked within 5 s; the first device read runs in the
-  background.
+- **No Gladys Plus, no server of the author**: authentication must work for
+  anyone with only a local Gladys. Two ways in, both exchanging the code in
+  the container: `google_account` (`oauth2`: the core frontend carries the
+  flow through its free static page `my.gladysassistant.com/redirect/oauth`,
+  or the instance itself over HTTPS, and brings the code back through
+  `onOAuthCallback`), and `google_account_local` (`account_link`: Google's
+  own redirect `https://www.google.com`, the address pasted into the
+  `finish_local_connection` action). Keep both: the local one is for users
+  who want no third-party page at all. The authorize URL is acked within
+  5 s; the first device read runs in the background.
+- **Events as turnkey as Google allows**: with `cloud_project_id`, the
+  integration creates its topic (`DEFAULT_TOPIC`), the publisher binding and
+  the subscription itself (`ensureTopic`, idempotent); the Device Access
+  console has no API, so the topic name is shown to the user in the status
+  until the first message arrives.
 - **Google quotas** (Sandbox): devices.list 5/min, executeCommand 10/min, the
   same command on one device 5/min. Keep the refresh at 1 minute or more and
   the per-device command spacing (`COMMAND_MIN_INTERVAL`).

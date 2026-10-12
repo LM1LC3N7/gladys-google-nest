@@ -4,6 +4,7 @@ import { TokenManager } from '../src/google/oauth.js';
 import {
   EventStream,
   PubSubClient,
+  SDM_PUBLISHER,
   decodeMessage,
   parseEventSource,
 } from '../src/google/pubsub.js';
@@ -52,6 +53,78 @@ test('a missing subscription is created on the topic, never expiring', async () 
     ackDeadlineSeconds: 30,
     expirationPolicy: {},
   });
+});
+
+test('ensureTopic creates the topic and lets Google publish on it, once', async () => {
+  let policy = { etag: 'e1', bindings: [{ role: 'roles/pubsub.viewer', members: ['user:me'] }] };
+  fake = installFetch([
+    ['POST', /token/, () => tokenAnswer()],
+    ['PUT', /topics\/gladys-google-nest$/, () => json({ name: 'x' })],
+    ['GET', /:getIamPolicy$/, () => json(policy)],
+    [
+      'POST',
+      /:setIamPolicy$/,
+      (call) => {
+        policy = { etag: 'e2', bindings: call.body.policy.bindings };
+        return json(policy);
+      },
+    ],
+  ]);
+  const client = new PubSubClient({ tokens: tokens() });
+  const topic = 'projects/my-home-123/topics/gladys-google-nest';
+  assert.deepEqual(await client.ensureTopic(topic), { created: true });
+  const set = fake.calls.find((c) => c.url.endsWith(':setIamPolicy'));
+  assert.deepEqual(set.body, {
+    policy: {
+      etag: 'e1',
+      bindings: [
+        { role: 'roles/pubsub.viewer', members: ['user:me'] },
+        { role: 'roles/pubsub.publisher', members: [SDM_PUBLISHER] },
+      ],
+    },
+  });
+
+  // Second run: the topic exists (409) and the binding is there: no write.
+  fake.restore();
+  fake = installFetch([
+    ['POST', /token/, () => tokenAnswer()],
+    ['PUT', /topics\/gladys-google-nest$/, () => googleError(409, 'ALREADY_EXISTS')],
+    ['GET', /:getIamPolicy$/, () => json(policy)],
+  ]);
+  assert.deepEqual(await client.ensureTopic(topic), { created: false });
+  assert.ok(!fake.calls.some((c) => c.url.endsWith(':setIamPolicy')));
+});
+
+test('ensureTopic adds the publisher to an existing publisher binding', async () => {
+  fake = installFetch([
+    ['POST', /token/, () => tokenAnswer()],
+    ['PUT', /topics\/gladys-google-nest$/, () => googleError(409, 'ALREADY_EXISTS')],
+    [
+      'GET',
+      /:getIamPolicy$/,
+      () =>
+        json({ etag: 'e', bindings: [{ role: 'roles/pubsub.publisher', members: ['user:me'] }] }),
+    ],
+    ['POST', /:setIamPolicy$/, (call) => json(call.body.policy)],
+  ]);
+  const client = new PubSubClient({ tokens: tokens() });
+  await client.ensureTopic('projects/my-home-123/topics/gladys-google-nest');
+  const set = fake.calls.find((c) => c.url.endsWith(':setIamPolicy'));
+  assert.deepEqual(set.body.policy.bindings, [
+    { role: 'roles/pubsub.publisher', members: ['user:me', SDM_PUBLISHER] },
+  ]);
+});
+
+test('ensureTopic fails on a project the account cannot manage', async () => {
+  fake = installFetch([
+    ['POST', /token/, () => tokenAnswer()],
+    ['PUT', /topics\/gladys-google-nest$/, () => googleError(403, 'PERMISSION_DENIED')],
+  ]);
+  const client = new PubSubClient({ tokens: tokens() });
+  await assert.rejects(
+    client.ensureTopic('projects/my-home-123/topics/gladys-google-nest'),
+    /PERMISSION_DENIED/,
+  );
 });
 
 test('a missing subscription without a topic is an error', async () => {

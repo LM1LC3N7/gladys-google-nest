@@ -25,6 +25,11 @@ import { isAuthError } from './oauth.js';
 // Our subscription, when the user gives a topic: one per topic project.
 export const DEFAULT_SUBSCRIPTION = 'gladys-google-nest';
 
+// The Google group that publishes the Nest events: it must be allowed to
+// publish on the topic (Google's Device Access guide, "Create a topic").
+export const SDM_PUBLISHER = 'group:sdm-publisher@googlegroups.com';
+const PUBLISHER_ROLE = 'roles/pubsub.publisher';
+
 const RESOURCE =
   /^projects\/([a-z][a-z0-9-]{4,28}[a-z0-9])\/(topics|subscriptions)\/([A-Za-z][\w.~+%-]{2,254})$/;
 
@@ -57,6 +62,48 @@ export class PubSubClient {
     return authorized(this.tokens, (token) =>
       requestJson(`${PUBSUB_API}/${subscription}`, { token }),
     );
+  }
+
+  /**
+   * Create our own topic in the user's Cloud project and let Google publish
+   * on it: the two steps of the setup guide nobody enjoys. Idempotent: an
+   * existing topic and an existing binding are left as they are. Resolves
+   * `{ created }`.
+   */
+  async ensureTopic(topic) {
+    let created = false;
+    try {
+      await authorized(this.tokens, (token) =>
+        requestJson(`${PUBSUB_API}/${topic}`, { method: 'PUT', token, body: {} }),
+      );
+      created = true;
+    } catch (err) {
+      if (err.status !== 409) {
+        throw err;
+      }
+    }
+    const policy = await authorized(this.tokens, (token) =>
+      requestJson(`${PUBSUB_API}/${topic}:getIamPolicy`, { token }),
+    );
+    const bindings = Array.isArray(policy.bindings) ? policy.bindings : [];
+    const binding = bindings.find((b) => b.role === PUBLISHER_ROLE);
+    if (binding?.members?.includes(SDM_PUBLISHER)) {
+      return { created };
+    }
+    if (binding) {
+      binding.members = [...(binding.members ?? []), SDM_PUBLISHER];
+    } else {
+      bindings.push({ role: PUBLISHER_ROLE, members: [SDM_PUBLISHER] });
+    }
+    // The etag makes the write fail instead of overwriting a concurrent one.
+    await authorized(this.tokens, (token) =>
+      requestJson(`${PUBSUB_API}/${topic}:setIamPolicy`, {
+        method: 'POST',
+        token,
+        body: { policy: { etag: policy.etag, bindings } },
+      }),
+    );
+    return { created };
   }
 
   /** Create a subscription that never expires (the default is 31 idle days). */

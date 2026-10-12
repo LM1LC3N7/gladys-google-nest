@@ -1,16 +1,15 @@
 # TODO
 
-## Before the first release
+## Before announcing
 
-- [ ] Test on a real Gladys 5.1+ with a real Device Access project: OAuth
-      through https://my.gladysassistant.com/redirect/oauth, consent in the
-      Partner Connections Manager, first devices.list.
-- [ ] Check the Docker image in CI (ffmpeg from apk, multi-arch).
-- [ ] Draw the cover (800×534, ≤ 150 KB, no Google or Nest logo, no Nest blue
-      #00AFD8), then run the store validator.
-- [ ] Reserve "Google Nest" in the forum thread t/10385 (row #22 of the
-      ideas list below, "Cloud", available on 2026-10-12), then add the
-      `gladys-assistant-integration` topic to publish in the store.
+- [ ] Test on a real Gladys 5.1+ with a real Device Access project: the
+      `google_account` (oauth2) flow through the Gladys redirect page, the
+      local copy-and-paste flow, the topic creation from the Cloud project
+      ID, first devices.list.
+- [ ] Check that the Device Access console accepts a topic entered after the
+      project creation (edit project → enable events).
+- [ ] Add the `gladys-assistant-integration` topic to publish in the store
+      (Nest reserved in t/10385, post #63).
 - [ ] Turn on "Private vulnerability reporting" (SECURITY.md points there).
 
 ## To confirm on real devices

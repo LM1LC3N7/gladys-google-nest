@@ -24,10 +24,12 @@ gladys.onSetValue((device, feature, value) => {
 // --- Camera picture, awaited under 15 s ---------------------------------------
 gladys.onGetImage((device) => app.getImage(device));
 
-// --- Google account: the Connect button (account_link, acked under 5 s) ---
-// Nothing comes back to Gladys: the user pastes the address Google ended on
-// into the finish_local_connection action.
-gladys.onOAuthAuthorizeUrl((key) => app.authorizeUrl(key));
+// --- Google account: the Connect buttons (acked under 5 s) --------------------
+// `google_account` (oauth2): the frontend brings the code back here.
+// `google_account_local` (account_link): nothing comes back, the user pastes
+// the address Google ended on into the finish_local_connection action.
+gladys.onOAuthAuthorizeUrl((key, redirectUri) => app.authorizeUrl(key, redirectUri));
+gladys.onOAuthCallback((key, answer) => app.oauthCallback(key, answer));
 
 // --- Configuration screen button ---------------------------------------------
 gladys.onAction('test_connection', () => app.testConnection());

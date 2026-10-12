@@ -366,8 +366,165 @@ test('the Pub/Sub topic starts the event stream', async () => {
     pulled[0],
     'https://pubsub.googleapis.com/v1/projects/my-home-123/subscriptions/gladys-google-nest:pull',
   );
+  // Until Google sends something, the hint reminds the Device Access step.
+  assert.match(gladys.calls.statuses.at(-1).message.en, /no event received yet.*my-home-123/);
+  await app.handleMessage(
+    message({ resourceUpdate: { name: 'enterprises/project-id/devices/THERMO-1', traits: {} } }),
+  );
   assert.equal(gladys.calls.statuses.at(-1).message, undefined, 'no hint: all is well');
   await app.stop();
+});
+
+test('a Cloud project ID: the topic is created, Google allowed to publish, then the stream', async () => {
+  const config = { ...CONNECTED, cloud_project_id: 'gladys-nest-123' };
+  const { app, gladys } = setup({
+    config,
+    routes: googleRoutes({
+      extra: [
+        ['PUT', /topics\/gladys-google-nest$/, () => json({ name: 'topic' })],
+        ['GET', /:getIamPolicy$/, () => json({ etag: 'e', bindings: [] })],
+        ['POST', /:setIamPolicy$/, (call) => json(call.body.policy)],
+        ['GET', /subscriptions\/gladys-google-nest$/, () => googleError(404, 'NOT_FOUND')],
+        ['PUT', /subscriptions\/gladys-google-nest$/, (call) => json({ name: 's', ...call.body })],
+        [
+          'POST',
+          /:pull$/,
+          (call) =>
+            new Promise((_resolve, reject) => {
+              call.signal.addEventListener('abort', () => reject(new Error('aborted')));
+            }),
+        ],
+      ],
+    }),
+  });
+  await app.start(config);
+  await new Promise((resolve) => setImmediate(resolve));
+  const pubsub = fake.calls
+    .filter((c) => c.url.includes('pubsub.googleapis.com'))
+    .map((c) => `${c.method} ${c.url.replace('https://pubsub.googleapis.com/v1/', '')}`);
+  assert.deepEqual(pubsub, [
+    'PUT projects/gladys-nest-123/topics/gladys-google-nest',
+    'GET projects/gladys-nest-123/topics/gladys-google-nest:getIamPolicy',
+    'POST projects/gladys-nest-123/topics/gladys-google-nest:setIamPolicy',
+    'GET projects/gladys-nest-123/subscriptions/gladys-google-nest',
+    'PUT projects/gladys-nest-123/subscriptions/gladys-google-nest',
+    'POST projects/gladys-nest-123/subscriptions/gladys-google-nest:pull',
+  ]);
+  const status = gladys.calls.statuses.at(-1);
+  assert.equal(status.connected, true);
+  assert.match(status.message.fr, /projects\/gladys-nest-123\/topics\/gladys-google-nest/);
+  const report = await app.testConnection();
+  assert.match(report.en, /events: no event received yet/);
+  await app.stop();
+});
+
+test('the Pub/Sub API not enabled, or a project the account cannot manage, are explained', async () => {
+  const config = { ...CONNECTED, cloud_project_id: 'gladys-nest-123' };
+  const { app, gladys } = setup({
+    config,
+    routes: googleRoutes({
+      extra: [
+        [
+          'PUT',
+          /topics\/gladys-google-nest$/,
+          () =>
+            googleError(
+              403,
+              'PERMISSION_DENIED',
+              'Cloud Pub/Sub API has not been used in project 123 before or it is disabled.',
+            ),
+        ],
+      ],
+    }),
+  });
+  await app.start(config);
+  let status = gladys.calls.statuses.at(-1);
+  assert.equal(status.connected, true, 'the devices still work');
+  assert.match(status.message.en, /Pub\/Sub API is not enabled on the project gladys-nest-123/);
+  assert.equal(gladys.calls.discovered.length, 1);
+
+  fake.restore();
+  fake = installFetch(
+    googleRoutes({
+      extra: [['PUT', /topics\/gladys-google-nest$/, () => googleError(403, 'PERMISSION_DENIED')]],
+    }),
+  );
+  await app.start(config);
+  status = gladys.calls.statuses.at(-1);
+  assert.match(status.message.en, /cannot manage Pub\/Sub on the project gladys-nest-123/);
+
+  await app.start({ ...CONNECTED, cloud_project_id: 'My Project' });
+  status = gladys.calls.statuses.at(-1);
+  assert.equal(status.connected, true);
+  assert.match(status.message.en, /Cloud project ID is invalid/);
+});
+
+test('oauth2: the redirect URI of the frontend is used, and the callback exchanges the code', async () => {
+  const { app, gladys, timers } = setup({
+    config: CREDENTIALS,
+    routes: googleRoutes({
+      extra: [
+        [
+          'POST',
+          /oauth2\.googleapis\.com\/token/,
+          (call) =>
+            call.body.grant_type === 'authorization_code'
+              ? tokenAnswer({ refresh_token: 'refresh-front' })
+              : tokenAnswer(),
+        ],
+      ],
+    }),
+  });
+  await app.start(CREDENTIALS);
+  const redirectUri = 'https://my.gladysassistant.com/redirect/oauth';
+  const url = new URL(await app.authorizeUrl('google_account', redirectUri));
+  assert.equal(url.searchParams.get('redirect_uri'), redirectUri);
+  assert.equal(url.searchParams.get('client_id'), CREDENTIALS.client_id);
+  const state = url.searchParams.get('state');
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(gladys.config[STORED.REDIRECT_URI], redirectUri);
+
+  await assert.rejects(
+    app.oauthCallback('google_account', { code: '4/0Ab', state: 'forged', redirectUri }),
+    /older than 30 minutes or unknown/,
+  );
+  await assert.rejects(
+    app.oauthCallback('google_account', { state, redirectUri }),
+    /no authorization code/,
+  );
+  await app.oauthCallback('google_account', { code: '4/0AbCdEfGhIj', state, redirectUri });
+  const exchange = fake.calls.find((c) => c.body?.grant_type === 'authorization_code');
+  assert.equal(exchange.body.code, '4/0AbCdEfGhIj');
+  assert.equal(exchange.body.redirect_uri, redirectUri);
+  assert.equal(gladys.config[STORED.REFRESH_TOKEN], 'refresh-front');
+  assert.equal(gladys.config[STORED.STATE], '');
+  await timers.runTimeouts();
+  assert.equal(gladys.calls.discovered.length, 1);
+});
+
+test('oauth2: the redirect URI survives a restart between Connect and the callback', async () => {
+  const { app, gladys } = setup({
+    config: CREDENTIALS,
+    routes: [['POST', /token/, () => tokenAnswer({ refresh_token: 'r' })]],
+  });
+  await app.start(CREDENTIALS);
+  const url = new URL(await app.authorizeUrl('google_account', 'https://gladys.example/cb'));
+  await new Promise((resolve) => setImmediate(resolve));
+  const restarted = new NestApp({
+    gladys,
+    logger: quiet,
+    now: () => FIXTURE_NOW,
+    timers: createFakeTimers(),
+  });
+  await restarted.start(await gladys.getConfig());
+  // The frontend may not hand the redirect URI back: the stored one is used.
+  await restarted.oauthCallback('google_account', {
+    code: '4/0AbCdEfGhIj',
+    state: url.searchParams.get('state'),
+  });
+  const exchange = fake.calls.find((c) => c.body?.grant_type === 'authorization_code');
+  assert.equal(exchange.body.redirect_uri, 'https://gladys.example/cb');
+  assert.equal(gladys.config[STORED.REFRESH_TOKEN], 'r');
 });
 
 test('an invalid Pub/Sub topic is reported, the devices still work', async () => {

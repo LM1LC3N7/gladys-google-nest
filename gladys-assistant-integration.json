@@ -21,8 +21,8 @@
         "fr": "Votre projet Google Device Access"
       },
       "description": {
-        "en": "Unofficial connector, not affiliated with Google. Thermostats compatible with Matter (Nest Thermostat 2020, Nest Learning Thermostat 4th gen) can be paired locally with the Matter integration of Gladys instead, without any Google account. This connector uses the official Smart Device Management API, through your own Device Access project (a one-time US$5 fee charged by Google) and your own Google Cloud OAuth client: follow the setup guide step by step, and publish the OAuth consent screen (\"In production\"), otherwise Google disconnects you every 7 days.",
-        "fr": "Connecteur non officiel, sans lien avec Google. Les thermostats compatibles Matter (Nest Thermostat 2020, Nest Learning Thermostat 4e génération) peuvent plutôt être appairés en local avec l'intégration Matter de Gladys, sans compte Google. Ce connecteur utilise l'API officielle Smart Device Management, via votre propre projet Device Access (5 $ US facturés une fois par Google) et votre propre client OAuth Google Cloud : suivez le guide d'installation pas à pas, et publiez l'écran de consentement OAuth (« En production »), sinon Google vous déconnecte tous les 7 jours."
+        "en": "Unofficial connector, not affiliated with Google. Thermostats compatible with Matter (Nest Thermostat 2020, Nest Learning Thermostat 4th gen) can be paired locally with the Matter integration of Gladys instead, without any Google account. This connector uses the official Smart Device Management API through your own Device Access project (a one-time US$5 fee charged by Google) and your own Google Cloud OAuth client: follow the setup guide step by step, and publish the OAuth consent screen (\"In production\"), otherwise Google disconnects you every 7 days. Nothing goes through Gladys Plus: the tokens are exchanged and kept by your Gladys only.",
+        "fr": "Connecteur non officiel, sans lien avec Google. Les thermostats compatibles Matter (Nest Thermostat 2020, Nest Learning Thermostat 4e génération) peuvent plutôt être appairés en local avec l'intégration Matter de Gladys, sans compte Google. Ce connecteur utilise l'API officielle Smart Device Management via votre propre projet Device Access (5 $ US facturés une fois par Google) et votre propre client OAuth Google Cloud : suivez le guide d'installation pas à pas, et publiez l'écran de consentement OAuth (« En production »), sinon Google vous déconnecte tous les 7 jours. Rien ne passe par Gladys Plus : les jetons sont échangés et gardés par votre Gladys seulement."
       },
       "links": [
         {
@@ -99,8 +99,33 @@
         "fr": "Connecter votre compte Google"
       },
       "description": {
-        "en": "Add https://www.google.com as an authorized redirect URI of your OAuth client. Click \"Connect\" under \"Google account\", allow the access, then copy the address of the google.com page Google opens at the end and paste it in the \"Finish the connection\" action below. Nothing goes through a third-party page nor through Gladys Plus: the tokens are exchanged and kept by your Gladys only.",
-        "fr": "Ajoutez https://www.google.com comme URI de redirection autorisée de votre client OAuth. Cliquez sur « Connecter » sous « Compte Google », autorisez l'accès, puis copiez l'adresse de la page google.com ouverte par Google à la fin et collez-la dans l'action « Terminer la connexion » ci-dessous. Rien ne passe par une page tierce ni par Gladys Plus : les jetons sont échangés et gardés par votre Gladys seulement."
+        "en": "Add the redirect URI shown under \"Google account\" to the authorized redirect URIs of your OAuth client, save, then click \"Connect\" and allow the access: the connection completes by itself. The Gladys redirect page only sees a code that is useless without your client secret, which never leaves your Gladys.",
+        "fr": "Ajoutez l'URI de redirection affichée sous « Compte Google » aux URI de redirection autorisés de votre client OAuth, enregistrez, puis cliquez sur « Connecter » et autorisez l'accès : la connexion se termine toute seule. La page de redirection de Gladys ne voit qu'un code inutilisable sans votre code secret, qui ne quitte jamais votre Gladys."
+      }
+    },
+    {
+      "key": "google_account",
+      "type": "oauth2",
+      "required": false,
+      "label": {
+        "en": "Google account",
+        "fr": "Compte Google"
+      },
+      "description": {
+        "en": "Opens the Google consent: select the homes and devices to share and allow both permissions (devices, and events through Pub/Sub).",
+        "fr": "Ouvre le consentement Google : cochez les maisons et appareils à partager et autorisez les deux accès (appareils, et événements via Pub/Sub)."
+      }
+    },
+    {
+      "key": "account_local",
+      "type": "section",
+      "label": {
+        "en": "Local connection (advanced)",
+        "fr": "Connexion locale (avancée)"
+      },
+      "description": {
+        "en": "Without any third-party page, not even the Gladys one: add https://www.google.com as an authorized redirect URI of your OAuth client, click \"Connect\" below, allow the access, then copy the address of the google.com page Google ends on and paste it in the \"Finish the connection\" action.",
+        "fr": "Sans aucune page tierce, pas même celle de Gladys : ajoutez https://www.google.com comme URI de redirection autorisée de votre client OAuth, cliquez sur « Connecter » ci-dessous, autorisez l'accès, puis copiez l'adresse de la page google.com où Google s'arrête et collez-la dans l'action « Terminer la connexion »."
       }
     },
     {
@@ -108,12 +133,12 @@
       "type": "account_link",
       "required": false,
       "label": {
-        "en": "Google account",
-        "fr": "Compte Google"
+        "en": "Google account (local)",
+        "fr": "Compte Google (local)"
       },
       "description": {
-        "en": "Opens the Google consent: select the homes and devices to share and allow both permissions. At the end, Google shows www.google.com: copy the whole address of that page.",
-        "fr": "Ouvre le consentement Google : cochez les maisons et appareils à partager et autorisez les deux accès. À la fin, Google affiche www.google.com : copiez l'adresse complète de cette page."
+        "en": "Same Google consent; at the end, Google shows www.google.com: copy the whole address of that page.",
+        "fr": "Même consentement Google ; à la fin, Google affiche www.google.com : copiez l'adresse complète de cette page."
       }
     },
     {
@@ -124,8 +149,25 @@
         "fr": "Événements en temps réel"
       },
       "description": {
-        "en": "Doorbell presses, motion, persons, sounds and instant thermostat updates come through a Pub/Sub topic of your Google Cloud project. Without it, the thermostats are refreshed periodically and the cameras send no events.",
-        "fr": "Les appuis de sonnette, mouvements, personnes, sons et mises à jour instantanées des thermostats passent par un sujet Pub/Sub de votre projet Google Cloud. Sans lui, les thermostats sont rafraîchis périodiquement et les caméras n'envoient aucun événement."
+        "en": "Doorbell presses, motion, persons, sounds and instant thermostat updates come through a Pub/Sub topic of your Google Cloud project. Give the project ID: the integration creates the topic \"gladys-google-nest\" and its permission itself, then shows the topic to enter in the Device Access console. Without events, the thermostats are refreshed periodically and the cameras send nothing.",
+        "fr": "Les appuis de sonnette, mouvements, personnes, sons et mises à jour instantanées des thermostats passent par un sujet Pub/Sub de votre projet Google Cloud. Donnez l'ID du projet : l'intégration crée elle-même le sujet « gladys-google-nest » et son autorisation, puis affiche le sujet à saisir dans la console Device Access. Sans événements, les thermostats sont rafraîchis périodiquement et les caméras n'envoient rien."
+      }
+    },
+    {
+      "key": "cloud_project_id",
+      "type": "string",
+      "required": false,
+      "label": {
+        "en": "Google Cloud project ID",
+        "fr": "ID du projet Google Cloud"
+      },
+      "description": {
+        "en": "The project ID of the Cloud console (lowercase letters, digits, hyphens), where your OAuth client lives. The connected Google account must own it.",
+        "fr": "L'ID du projet de la console Cloud (minuscules, chiffres, tirets), celui de votre client OAuth. Le compte Google connecté doit en être propriétaire."
+      },
+      "placeholder": {
+        "en": "gladys-nest-123456",
+        "fr": "gladys-nest-123456"
       }
     },
     {
@@ -133,12 +175,12 @@
       "type": "string",
       "required": false,
       "label": {
-        "en": "Pub/Sub topic",
-        "fr": "Sujet Pub/Sub"
+        "en": "Existing Pub/Sub topic (advanced)",
+        "fr": "Sujet Pub/Sub existant (avancé)"
       },
       "description": {
-        "en": "The topic entered in the Device Access console: the integration creates its own subscription \"gladys-google-nest\" on it. A subscription (projects/…/subscriptions/…) is accepted too.",
-        "fr": "Le sujet saisi dans la console Device Access : l'intégration y crée son propre abonnement « gladys-google-nest ». Un abonnement (projects/…/subscriptions/…) est aussi accepté."
+        "en": "Instead of the project ID: a topic you created yourself, on which sdm-publisher@googlegroups.com can publish (the integration creates its subscription \"gladys-google-nest\" on it), or a subscription (projects/…/subscriptions/…).",
+        "fr": "À la place de l'ID du projet : un sujet créé par vous, sur lequel sdm-publisher@googlegroups.com peut publier (l'intégration y crée son abonnement « gladys-google-nest »), ou un abonnement (projects/…/subscriptions/…)."
       },
       "placeholder": {
         "en": "projects/my-project/topics/nest-events",
@@ -316,8 +358,8 @@
         "fr": "Terminer la connexion"
       },
       "description": {
-        "en": "After \"Connect\": paste the address of the google.com page Google ended on. The code it holds works once, for a few minutes.",
-        "fr": "Après « Connecter » : collez l'adresse de la page google.com sur laquelle Google s'est arrêté. Le code qu'elle contient ne sert qu'une fois, quelques minutes."
+        "en": "Local connection only. After \"Connect\" under \"Google account (local)\": paste the address of the google.com page Google ended on. The code it holds works once, for a few minutes.",
+        "fr": "Connexion locale seulement. Après « Connecter » sous « Compte Google (local) » : collez l'adresse de la page google.com sur laquelle Google s'est arrêté. Le code qu'elle contient ne sert qu'une fois, quelques minutes."
       },
       "fields": [
         {
@@ -343,8 +385,8 @@
         "fr": "Tester la connexion"
       },
       "description": {
-        "en": "Lists the devices Google shares and checks the Pub/Sub subscription.",
-        "fr": "Liste les appareils partagés par Google et vérifie l'abonnement Pub/Sub."
+        "en": "Lists the devices Google shares, creates the Pub/Sub topic and subscription if needed, and says what is left to do.",
+        "fr": "Liste les appareils partagés par Google, crée le sujet et l'abonnement Pub/Sub au besoin, et dit ce qu'il reste à faire."
       }
     }
   ],

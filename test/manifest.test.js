@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { SCENE_TRIGGERS } from '../src/app.js';
-import { DEFAULTS, normalizeConfig } from '../src/config.js';
+import { ACCOUNT_FIELD, DEFAULTS, LOCAL_ACCOUNT_FIELD, normalizeConfig } from '../src/config.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const manifest = JSON.parse(read('gladys-assistant-integration.json'));
@@ -66,15 +66,13 @@ test('config defaults match the code', () => {
       `${key}: the default is one of the options`,
     );
   }
-  assert.equal(fields.google_account_local.type, 'account_link');
-  assert.ok(
-    !manifest.config_schema.some((f) => f.type === 'oauth2'),
-    'no redirect through a hosted page: the connection stays local',
-  );
+  // Two ways in: the frontend-carried OAuth flow, and the local copy-paste.
+  assert.equal(fields[ACCOUNT_FIELD].type, 'oauth2');
+  assert.equal(fields[LOCAL_ACCOUNT_FIELD].type, 'account_link');
   assert.equal(fields.client_secret.type, 'secret');
   // Every config key the code reads is declared (the stored ones excepted).
   const declared = new Set(manifest.config_schema.map((f) => f.key));
-  for (const key of ['project_id', 'client_id', 'client_secret', 'pubsub']) {
+  for (const key of ['project_id', 'client_id', 'client_secret', 'cloud_project_id', 'pubsub']) {
     assert.ok(declared.has(key), key);
   }
   const config = normalizeConfig({
@@ -107,6 +105,7 @@ test('every action and scene action has a handler', () => {
   for (const action of manifest.actions) {
     assert.ok(index.includes(`onAction('${action.key}'`), action.key);
   }
+  assert.ok(index.includes('onOAuthCallback('), 'the oauth2 field needs the callback');
   for (const action of manifest.scene_actions) {
     assert.ok(index.includes(`onSceneAction('${action.key}'`), action.key);
     assert.deepEqual(

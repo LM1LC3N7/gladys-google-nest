@@ -10,6 +10,24 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Added
+
+- "Google account" button (`oauth2` field): the connection completes by
+  itself through the Gladys redirect page (a free static page, no Gladys
+  Plus) or your own HTTPS address; the local copy-and-paste connection stays
+  available as "Google account (local)".
+- "Google Cloud project ID" option: the integration creates the Pub/Sub topic
+  `gladys-google-nest`, lets Google publish on it and creates its
+  subscription; only the topic name is left to enter in the Device Access
+  console, shown in the status until the first event arrives.
+- Clearer hints: Pub/Sub API not enabled, account that cannot manage the
+  Cloud project, invalid project ID; "Test the connection" sets the events
+  up too and says what is left to do.
+
+### Changed
+
+- Setup guide reordered: connect first, events last, 15 minutes.
+
 ## [1.0.0] - 2026-10-12
 
 ### Added

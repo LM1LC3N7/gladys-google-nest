@@ -12,8 +12,10 @@
 import { createLogger } from '@gladysassistant/integration-sdk';
 import { CameraPictures, NoPictureError } from './camera.js';
 import {
+  LOCAL_ACCOUNT_FIELD,
   LOCAL_REDIRECT_URI,
   STORED,
+  badCloudProjectId,
   hasCredentials,
   normalizeConfig,
   parsePastedAuthorization,
@@ -101,6 +103,8 @@ export class NestApp {
     // Google refused the account: nothing runs until a new authorization.
     this.authFailed = false;
     this.eventsState = { status: 'off' };
+    // No message since the start: the hint to finish the Device Access setup.
+    this.eventsReceived = false;
     // Bumped on every (re)start: a slower start that was overtaken stops.
     this.generation = 0;
     // start() and stop() run one at a time, in call order.
@@ -138,6 +142,7 @@ export class NestApp {
     await this.doStop();
     const generation = ++this.generation;
     this.eventsState = { status: 'off' };
+    this.eventsReceived = false;
     // The config Gladys sends may lack the off-schema keys: keep ours.
     this.raw = { ...pickStored(this.raw), ...raw };
     this.config = normalizeConfig(this.raw);
@@ -244,6 +249,11 @@ export class NestApp {
       message = T.noEvents;
     } else if (this.eventsState.status === 'error') {
       message = this.eventsState.text;
+    } else if (!this.eventsReceived) {
+      // The topic is what the Device Access console wants; a subscription
+      // given by hand has its own, unknown here.
+      const source = parseEventSource(this.config.eventSource);
+      message = T.eventsPending(source?.topic ?? this.config.eventSource);
     }
     await this.setStatus(true, message);
   }
@@ -401,19 +411,13 @@ export class NestApp {
   }
 
   async openEvents(generation) {
-    if (!this.config.eventSource) {
-      this.eventsState = { status: 'off' };
-      await this.updateStatus();
-      return;
-    }
-    const source = parseEventSource(this.config.eventSource);
+    const source = this.eventSource();
     if (!source) {
-      this.eventsState = { status: 'error', text: T.badEventSource, message: 'invalid topic' };
       await this.updateStatus();
       return;
     }
     try {
-      await this.pubsub.ensureSubscription(source);
+      await this.prepareEvents(source);
     } catch (err) {
       if (generation !== this.generation) {
         return;
@@ -422,10 +426,10 @@ export class NestApp {
         await this.handleError(err, 'Pub/Sub');
         return;
       }
-      this.logger.warn(`Pub/Sub subscription unavailable: ${err.message}`);
+      this.logger.warn(`Pub/Sub unavailable: ${err.message}`);
       this.eventsState = {
         status: 'error',
-        text: T.eventsFailed(err.message),
+        text: describePubSubError(err, source),
         message: err.message,
       };
       await this.updateStatus();
@@ -460,10 +464,45 @@ export class NestApp {
   }
 
   /**
+   * Where the events come from: the user's topic or subscription, or the
+   * topic we create in their Cloud project. Sets `eventsState` and resolves
+   * null when there is none or it is invalid.
+   */
+  eventSource() {
+    if (!this.config.eventSource) {
+      this.eventsState = badCloudProjectId(this.config)
+        ? { status: 'error', text: T.badCloudProjectId, message: 'invalid project' }
+        : { status: 'off' };
+      return null;
+    }
+    const source = parseEventSource(this.config.eventSource);
+    if (!source) {
+      this.eventsState = { status: 'error', text: T.badEventSource, message: 'invalid topic' };
+      return null;
+    }
+    return source;
+  }
+
+  /** Our own topic, when asked for, then the subscription. */
+  async prepareEvents(source) {
+    if (this.config.ownEvents) {
+      const { created } = await this.pubsub.ensureTopic(source.topic);
+      if (created) {
+        this.logger.info(`Created the Pub/Sub topic ${source.topic}`);
+      }
+    }
+    await this.pubsub.ensureSubscription(source);
+  }
+
+  /**
    * One Pub/Sub message. `publishTime` (Google's clock) tells a live event
    * from a backlog delivered after a restart.
    */
   async handleMessage(message, { publishTime } = {}) {
+    if (!this.eventsReceived) {
+      this.eventsReceived = true;
+      await this.updateStatus();
+    }
     const parsed = parseMessage(message);
     if (parsed.relation) {
       this.scheduleRefresh();
@@ -627,13 +666,15 @@ export class NestApp {
   // --- OAuth -----------------------------------------------------------------
   //
   // A local connection only: no Gladys Plus, no third-party redirect page.
-  // The Connect button (`google_account_local`, an account_link field) opens
-  // the Google consent with Google's own page https://www.google.com as
-  // redirect URI; nothing comes back to Gladys, and the user pastes the
-  // address Google ended on into the `finish_local_connection` action. The
-  // code exchange happens here, in the container.
+  // Two Connect buttons, one code exchange, here in the container:
+  //  - `google_account` (oauth2): the frontend gives the redirect URI (its
+  //    static page, or the instance over HTTPS) and brings the code back
+  //    through `oauthCallback`;
+  //  - `google_account_local` (account_link): Google's own page
+  //    https://www.google.com is the redirect URI, nothing comes back, and the
+  //    user pastes the address Google ended on into `finish_local_connection`.
 
-  async authorizeUrl() {
+  async authorizeUrl(key, redirectUri) {
     // The SDK updates gladys.config as soon as the user saves: "Connect"
     // right after "Save" must not wait for the restart.
     const config = normalizeConfig({ ...this.raw, ...this.gladys.config });
@@ -642,17 +683,20 @@ export class NestApp {
         'Fill in the Device Access project ID, the client ID and the client secret, then save, before connecting',
       );
     }
-    this.pending = { state: createState(), at: this.now() };
+    // An account_link field hands no redirect URI; an oauth2 one always does.
+    const redirect = key === LOCAL_ACCOUNT_FIELD || !redirectUri ? LOCAL_REDIRECT_URI : redirectUri;
+    this.pending = { state: createState(), at: this.now(), redirectUri: redirect };
     // Off the critical path: Gladys gives the handler 5 s, and a restart
     // between the two steps must still find the state.
     this.store({
       [STORED.STATE]: this.pending.state,
       [STORED.STATE_AT]: this.pending.at,
+      [STORED.REDIRECT_URI]: redirect,
     }).catch((err) => this.logger.error('Storing the pending authorization failed', err));
     return buildAuthorizeUrl({
       projectId: config.projectId,
       clientId: config.clientId,
-      redirectUri: LOCAL_REDIRECT_URI,
+      redirectUri: redirect,
       state: this.pending.state,
     });
   }
@@ -664,22 +708,33 @@ export class NestApp {
       // The container may have restarted while the user was consenting.
       const stored = normalizeConfig(await this.gladys.getConfig());
       pending = stored.pendingState
-        ? { state: stored.pendingState, at: stored.pendingStateAt }
+        ? {
+            state: stored.pendingState,
+            at: stored.pendingStateAt,
+            redirectUri: stored.pendingRedirectUri,
+          }
         : undefined;
     }
-    return Boolean(
+    const ours = Boolean(
       pending && sameState(pending.state, state) && this.now() - pending.at <= OAUTH_STATE_TTL,
     );
+    if (ours) {
+      this.pending = pending;
+    }
+    return ours;
   }
 
-  /** Exchange a code, store the refresh token, start in the background. */
-  async completeAuthorization(code) {
+  /**
+   * Exchange a code, store the refresh token, start in the background.
+   * `redirectUri` must be the one of the authorize URL, byte for byte.
+   */
+  async completeAuthorization(code, redirectUri) {
     const config = normalizeConfig({ ...this.raw, ...this.gladys.config });
     const answer = await exchangeCode({
       clientId: config.clientId,
       clientSecret: config.clientSecret,
       code,
-      redirectUri: LOCAL_REDIRECT_URI,
+      redirectUri,
     });
     if (!answer.refresh_token) {
       throw new Error(
@@ -691,6 +746,7 @@ export class NestApp {
       [STORED.REFRESH_TOKEN]: answer.refresh_token,
       [STORED.STATE]: '',
       [STORED.STATE_AT]: 0,
+      [STORED.REDIRECT_URI]: '',
     });
     this.logger.info('Google account connected');
     // The first devices.list, which also completes the Device Access
@@ -702,6 +758,23 @@ export class NestApp {
         ),
       0,
     );
+  }
+
+  /**
+   * The frontend brings the code of the `google_account` (oauth2) field
+   * back. A rejection is shown to the user by the frontend.
+   */
+  async oauthCallback(key, { code, state, redirectUri } = {}) {
+    if (!code) {
+      throw new Error('Google returned no authorization code: connect again');
+    }
+    if (!(await this.isPendingState(state))) {
+      throw new Error(
+        'This authorization is older than 30 minutes or unknown: click "Connect" again',
+      );
+    }
+    // The frontend returns the same URI it gave; keep ours if it does not.
+    await this.completeAuthorization(code, redirectUri || this.pending.redirectUri);
   }
 
   /**
@@ -722,7 +795,7 @@ export class NestApp {
       return T.localExpired;
     }
     try {
-      await this.completeAuthorization(pasted.code);
+      await this.completeAuthorization(pasted.code, LOCAL_REDIRECT_URI);
     } catch (err) {
       this.logger.warn(`Local connection failed: ${err.message}`);
       return T.localFailed(err.message);
@@ -751,15 +824,17 @@ export class NestApp {
     const kinds = list.map(deviceKind);
     const count = (kind) => kinds.filter((k) => k === kind).length;
     let events = { status: 'off' };
-    const source = this.config.eventSource && parseEventSource(this.config.eventSource);
-    if (this.config.eventSource && !source) {
-      events = { status: 'error', message: T.badEventSource.en };
+    const source = this.eventSource();
+    if (this.eventsState.status === 'error') {
+      events = { status: 'error', text: this.eventsState.text };
     } else if (source) {
       try {
-        await this.pubsub.ensureSubscription(source);
-        events = { status: 'ok' };
+        await this.prepareEvents(source);
+        events = this.eventsReceived
+          ? { status: 'ok' }
+          : { status: 'pending', text: T.eventsPending(source.topic ?? source.subscription) };
       } catch (err) {
-        events = { status: 'error', message: err.message };
+        events = { status: 'error', text: describePubSubError(err, source) };
       }
     }
     return connectionReport({
@@ -772,6 +847,19 @@ export class NestApp {
       events,
     });
   }
+}
+
+/** The text of a Pub/Sub error, with the hint for the usual causes. */
+function describePubSubError(err, source) {
+  const project = /^projects\/([^/]+)\//.exec(source.subscription)?.[1] ?? '?';
+  if (err instanceof GoogleApiError && err.status === 403) {
+    // "Cloud Pub/Sub API has not been used in project … before or it is
+    // disabled" (SERVICE_DISABLED) vs. an account that does not own the project.
+    return /not been used|disabled/i.test(err.detail ?? '')
+      ? T.pubsubApiDisabled(project)
+      : T.pubsubForbidden(project);
+  }
+  return T.eventsFailed(err.message);
 }
 
 /** The off-schema keys of a raw config. */
