@@ -1,12 +1,10 @@
 // -----------------------------------------------------------------------------
 // Google OAuth 2.0 for the Device Access program.
 //
-// Gladys relays the browser flow (manifest field of type `oauth2`): it hands
-// us its redirect URI, we build the Partner Connections Manager URL (the Nest
-// consent screen), Gladys relays the code back, we exchange it. The redirect
-// URI is never hardcoded: it is the fixed https://my.gladysassistant.com page
-// by default, or the instance address when served over HTTPS, and the same
-// value must come back byte for byte in the token exchange.
+// We build the Partner Connections Manager URL (the Nest consent screen) and
+// exchange the code ourselves. The redirect URI must come back byte for byte
+// in the token exchange; the app uses Google's own page (see
+// LOCAL_REDIRECT_URI), so nothing but Google and Gladys sees the code.
 // -----------------------------------------------------------------------------
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';

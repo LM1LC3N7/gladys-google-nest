@@ -9,8 +9,8 @@ export const T = {
     fr: "Renseignez l'ID du projet Device Access, l'ID client et le code secret du client, enregistrez, puis connectez votre compte Google.",
   },
   notConnected: {
-    en: 'Connect your Google account: "Connect" under "Google account (local)" then "Finish the local connection", or "Connect" under "Google account (automatic)".',
-    fr: 'Connectez votre compte Google : « Connecter » sous « Compte Google (local) » puis « Terminer la connexion locale », ou « Connecter » sous « Compte Google (automatique) ».',
+    en: 'Connect your Google account: "Connect" under "Google account", then the "Finish the connection" action.',
+    fr: "Connectez votre compte Google : « Connecter » sous « Compte Google », puis l'action « Terminer la connexion ».",
   },
   localConnected: {
     en: 'Google account connected: the devices appear in Discovery in a few seconds.',
@@ -21,16 +21,16 @@ export const T = {
     fr: "Aucun code d'autorisation trouvé : collez l'adresse complète de la page google.com ouverte par Google à la fin (elle contient « code= »).",
   },
   localExpired: {
-    en: 'This address belongs to an older or unknown authorization: click "Connect" under "Google account (local)" again, then paste the new address.',
-    fr: 'Cette adresse correspond à une autorisation ancienne ou inconnue : cliquez de nouveau sur « Connecter » sous « Compte Google (local) », puis collez la nouvelle adresse.',
+    en: 'This address belongs to an older or unknown authorization: click "Connect" under "Google account" again, then paste the new address.',
+    fr: 'Cette adresse correspond à une autorisation ancienne ou inconnue : cliquez de nouveau sur « Connecter » sous « Compte Google », puis collez la nouvelle adresse.',
   },
   localRefused: (error) => ({
-    en: `Google did not grant the access (${error}): click "Connect" under "Google account (local)" again and allow both permissions.`,
-    fr: `Google n'a pas accordé l'accès (${error}) : cliquez de nouveau sur « Connecter » sous « Compte Google (local) » et autorisez les deux accès.`,
+    en: `Google did not grant the access (${error}): click "Connect" under "Google account" again and allow both permissions.`,
+    fr: `Google n'a pas accordé l'accès (${error}) : cliquez de nouveau sur « Connecter » sous « Compte Google » et autorisez les deux accès.`,
   }),
   localFailed: (message) => ({
-    en: `Google refused the code: ${message}. A code works once and for a few minutes: click "Connect" under "Google account (local)" again. Check that https://www.google.com is an authorized redirect URI of your OAuth client.`,
-    fr: `Google a refusé le code : ${message}. Un code ne sert qu'une fois et quelques minutes : cliquez de nouveau sur « Connecter » sous « Compte Google (local) ». Vérifiez que https://www.google.com est une URI de redirection autorisée de votre client OAuth.`,
+    en: `Google refused the code: ${message}. A code works once and for a few minutes: click "Connect" under "Google account" again. Check that https://www.google.com is an authorized redirect URI of your OAuth client.`,
+    fr: `Google a refusé le code : ${message}. Un code ne sert qu'une fois et quelques minutes : cliquez de nouveau sur « Connecter » sous « Compte Google ». Vérifiez que https://www.google.com est une URI de redirection autorisée de votre client OAuth.`,
   }),
   reconnect: {
     en: 'Google refused the access: connect your Google account again. If this happens every 7 days, publish your OAuth consent screen ("In production").',
@@ -63,7 +63,7 @@ export const T = {
 };
 
 /** The text of the test_connection action, a { en, fr } object. */
-export function connectionReport({ devices, events, redirectUri }) {
+export function connectionReport({ devices, events }) {
   const count = (n, en, fr) => ({
     en: `${n} ${en}${n > 1 ? 's' : ''}`,
     fr: `${n} ${fr}${n > 1 ? 's' : ''}`,
@@ -84,11 +84,8 @@ export function connectionReport({ devices, events, redirectUri }) {
     ok: { en: 'events: OK', fr: 'événements : OK' },
     error: { en: `events: ${events.message}`, fr: `événements : ${events.message}` },
   }[events.status];
-  const redirect = redirectUri
-    ? { en: ` Redirect URI: ${redirectUri}`, fr: ` URI de redirection : ${redirectUri}` }
-    : { en: '', fr: '' };
   return {
-    en: `Google Nest OK: ${parts.map((p) => p.en).join(', ')}; ${eventsText.en}.${redirect.en}`,
-    fr: `Google Nest OK : ${parts.map((p) => p.fr).join(', ')} ; ${eventsText.fr}.${redirect.fr}`,
+    en: `Google Nest OK: ${parts.map((p) => p.en).join(', ')}; ${eventsText.en}.`,
+    fr: `Google Nest OK : ${parts.map((p) => p.fr).join(', ')} ; ${eventsText.fr}.`,
   };
 }

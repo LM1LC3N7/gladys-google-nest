@@ -66,8 +66,11 @@ test('config defaults match the code', () => {
       `${key}: the default is one of the options`,
     );
   }
-  assert.equal(fields.google_account.type, 'oauth2');
   assert.equal(fields.google_account_local.type, 'account_link');
+  assert.ok(
+    !manifest.config_schema.some((f) => f.type === 'oauth2'),
+    'no redirect through a hosted page: the connection stays local',
+  );
   assert.equal(fields.client_secret.type, 'secret');
   // Every config key the code reads is declared (the stored ones excepted).
   const declared = new Set(manifest.config_schema.map((f) => f.key));
@@ -117,7 +120,6 @@ test('the docs exist in both languages, long enough for the store', () => {
   for (const lang of ['en', 'fr']) {
     const doc = read(`docs/${lang}.md`);
     assert.ok(doc.length >= 300, `docs/${lang}.md`);
-    assert.match(doc, /my\.gladysassistant\.com\/redirect\/oauth/);
     assert.match(doc, /`https:\/\/www\.google\.com`/, 'the local redirect URI');
     assert.match(doc, /Matter/);
     assert.match(doc, /sdm-publisher@googlegroups\.com/);

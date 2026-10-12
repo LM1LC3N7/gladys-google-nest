@@ -65,14 +65,15 @@ Pub/Sub gRPC client about 90 MB, in a 256 MB sandbox, for six REST calls.
   (`thermostat`, `camera`, `doorbell`, `display`) and the off-schema config
   keys (`oauth_refresh_token`…) are stored in user scenes, dashboards and
   configs. Never rename them.
-- **No hosted service**: authentication must work for anyone with only a
-  local Gladys. Never depend on Gladys Plus or on a server of the author;
-  keep the local connection (`google_account_local`, redirect
-  `https://www.google.com`, pasted into `finish_local_connection`) working.
-- **Gladys acks the OAuth relays within 5 s**: `onOAuthCallback` exchanges
-  the code, stores the refresh token, acks, and reads the devices in the
-  background. Never hardcode the redirect URI: use the one Gladys hands over,
-  byte for byte, in the exchange.
+- **Local only, no hosted service**: authentication must work for anyone
+  with only a local Gladys. Never depend on Gladys Plus, on a server of the
+  author or on a third-party redirect page (no `oauth2` field: the core's
+  one goes through my.gladysassistant.com). The connection is the
+  `google_account_local` account_link field, Google's own redirect
+  `https://www.google.com`, and the address pasted into the
+  `finish_local_connection` action, which exchanges the code here. The
+  authorize URL is acked within 5 s; the first device read runs in the
+  background.
 - **Google quotas** (Sandbox): devices.list 5/min, executeCommand 10/min, the
   same command on one device 5/min. Keep the refresh at 1 minute or more and
   the per-device command spacing (`COMMAND_MIN_INTERVAL`).

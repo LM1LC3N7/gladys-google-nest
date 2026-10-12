@@ -379,53 +379,19 @@ test('an invalid Pub/Sub topic is reported, the devices still work', async () =>
   assert.equal(gladys.calls.discovered.length, 1);
 });
 
-test('OAuth: the authorize URL stores its state, the callback checks it and connects', async () => {
-  const { app, gladys, timers } = setup({
-    config: CREDENTIALS,
-    routes: googleRoutes({
-      extra: [
-        [
-          'POST',
-          /oauth2\.googleapis\.com\/token/,
-          (call) =>
-            call.body.grant_type === 'authorization_code'
-              ? tokenAnswer({ refresh_token: 'refresh-new' })
-              : tokenAnswer(),
-        ],
-      ],
-    }),
-  });
-  await app.start(CREDENTIALS);
-  const redirectUri = 'https://my.gladysassistant.com/redirect/oauth';
-  const url = new URL(await app.authorizeUrl('google_account', redirectUri));
-  const state = url.searchParams.get('state');
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(gladys.config[STORED.STATE], state);
-  assert.equal(gladys.config[STORED.REDIRECT_URI], redirectUri);
-
-  await assert.rejects(
-    app.oauthCallback('google_account', { code: 'c', state: 'forged', redirectUri }),
-    /expired authorization/,
-  );
-  await app.oauthCallback('google_account', { code: 'c', state, redirectUri });
-  assert.equal(gladys.config[STORED.REFRESH_TOKEN], 'refresh-new');
-  assert.equal(gladys.config[STORED.STATE], '');
-  const exchange = fake.calls.find((c) => c.body?.grant_type === 'authorization_code');
-  assert.equal(exchange.body.redirect_uri, redirectUri);
-
-  // The devices are read in the background, after the ack.
-  await timers.runTimeouts();
-  assert.equal(gladys.calls.discovered.length, 1);
-  assert.equal(gladys.calls.statuses.at(-1).connected, true);
+test('OAuth: no authorize URL before the credentials are saved', async () => {
+  const { app } = setup({ config: {} });
+  await app.start({});
+  await assert.rejects(app.authorizeUrl('google_account_local'), /client secret/);
 });
 
-test('OAuth: the state survives a restart of the container', async () => {
+test('OAuth: the state of a pasted address survives a restart of the container', async () => {
   const { app, gladys } = setup({
     config: CREDENTIALS,
     routes: [['POST', /token/, () => tokenAnswer({ refresh_token: 'r' })]],
   });
   await app.start(CREDENTIALS);
-  const url = new URL(await app.authorizeUrl('google_account', 'https://x.example/cb'));
+  const url = new URL(await app.authorizeUrl('google_account_local'));
   await new Promise((resolve) => setImmediate(resolve));
   const restarted = new NestApp({
     gladys,
@@ -434,34 +400,19 @@ test('OAuth: the state survives a restart of the container', async () => {
     timers: createFakeTimers(),
   });
   await restarted.start(await gladys.getConfig());
-  await restarted.oauthCallback('google_account', {
-    code: 'c',
-    state: url.searchParams.get('state'),
-    redirectUri: 'https://x.example/cb',
+  const message = await restarted.finishLocalConnection({
+    answer: `https://www.google.com/?state=${url.searchParams.get('state')}&code=4/0AbCdEfGhIj`,
   });
+  assert.match(message.en, /connected/);
   assert.equal(gladys.config[STORED.REFRESH_TOKEN], 'r');
 });
 
-test('OAuth: no authorize URL before the credentials are saved', async () => {
-  const { app } = setup({ config: {} });
-  await app.start({});
-  await assert.rejects(app.authorizeUrl('google_account', 'https://x'), /client secret/);
-});
-
-test('the test action reports the devices and the redirect URI', async () => {
-  const { app } = setup({
-    config: {
-      ...CONNECTED,
-      [STORED.REDIRECT_URI]: 'https://my.gladysassistant.com/redirect/oauth',
-    },
-  });
-  await app.start({
-    ...CONNECTED,
-    [STORED.REDIRECT_URI]: 'https://my.gladysassistant.com/redirect/oauth',
-  });
+test('the test action reports the devices and the events', async () => {
+  const { app } = setup();
+  await app.start(CONNECTED);
   const report = await app.testConnection();
   assert.match(report.en, /1 thermostat, 1 camera, 1 doorbell; events: off/);
-  assert.match(report.fr, /URI de redirection : https:\/\/my\.gladysassistant\.com/);
+  assert.match(report.fr, /1 thermostat, 1 caméra, 1 sonnette ; événements : désactivés/);
 });
 
 test('take_snapshot refreshes an RTSP camera, and says no for a WebRTC one', async () => {
@@ -565,7 +516,7 @@ test('"Connect" right after "Save" uses the saved credentials', async () => {
   await app.start({});
   // The SDK updates gladys.config before the restart has run.
   Object.assign(gladys.config, CREDENTIALS);
-  const url = new URL(await app.authorizeUrl('google_account', 'https://x.example/cb'));
+  const url = new URL(await app.authorizeUrl('google_account_local'));
   assert.equal(url.searchParams.get('client_id'), CREDENTIALS.client_id);
 });
 
@@ -628,7 +579,7 @@ test('local connection: Google own redirect URI, pasted address, exchange here',
   });
   await app.start(CREDENTIALS);
   // account_link: Gladys hands no redirect URI.
-  const url = new URL(await app.authorizeUrl('google_account_local', undefined));
+  const url = new URL(await app.authorizeUrl('google_account_local'));
   assert.equal(url.searchParams.get('redirect_uri'), 'https://www.google.com');
   const state = url.searchParams.get('state');
 

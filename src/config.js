@@ -12,14 +12,12 @@ export const STORED = {
   REFRESH_TOKEN: 'oauth_refresh_token',
   STATE: 'oauth_state',
   STATE_AT: 'oauth_state_at',
-  REDIRECT_URI: 'oauth_redirect_uri',
 };
 
-// The local connection: an account_link field whose Connect button opens the
-// Google consent with Google's own page as redirect URI (the one Google's
-// Device Access quick start uses). Nothing comes back to Gladys: the user
-// pastes the address the browser ends on.
-export const LOCAL_ACCOUNT_KEY = 'google_account_local';
+// The connection is local: an account_link field (`google_account_local`)
+// whose Connect button opens the Google consent with Google's own page as
+// redirect URI (the one Google's Device Access quick start uses). Nothing
+// comes back to Gladys: the user pastes the address the browser ends on.
 export const LOCAL_REDIRECT_URI = 'https://www.google.com';
 
 // Defaults: they MUST match the `default` values of the manifest.
@@ -52,7 +50,6 @@ export function normalizeConfig(raw = {}) {
     refreshToken: text(raw[STORED.REFRESH_TOKEN]) || undefined,
     pendingState: text(raw[STORED.STATE]) || undefined,
     pendingStateAt: Number(raw[STORED.STATE_AT]) || 0,
-    redirectUri: text(raw[STORED.REDIRECT_URI]) || undefined,
   };
 }
 

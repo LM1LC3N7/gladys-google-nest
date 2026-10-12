@@ -24,9 +24,10 @@ gladys.onSetValue((device, feature, value) => {
 // --- Camera picture, awaited under 15 s ---------------------------------------
 gladys.onGetImage((device) => app.getImage(device));
 
-// --- OAuth: the local and the automatic Connect buttons (acked under 5 s) ---
-gladys.onOAuthAuthorizeUrl((key, redirectUri) => app.authorizeUrl(key, redirectUri));
-gladys.onOAuthCallback((key, payload) => app.oauthCallback(key, payload));
+// --- Google account: the Connect button (account_link, acked under 5 s) ---
+// Nothing comes back to Gladys: the user pastes the address Google ended on
+// into the finish_local_connection action.
+gladys.onOAuthAuthorizeUrl((key) => app.authorizeUrl(key));
 
 // --- Configuration screen button ---------------------------------------------
 gladys.onAction('test_connection', () => app.testConnection());

@@ -33,13 +33,12 @@ Gladys ◄─ WebSocket ─► this container ── HTTPS ──► smartdevice
   Learning Thermostat 4th gen) are better paired with the Gladys Matter
   integration, fully local. Cameras and the other thermostats have no local
   interface: this connector uses Google's cloud API.
-- **OAuth, without Gladys Plus nor any server of the author**: each user
-  brings their own Device Access project and OAuth client. Two ways to
-  connect: _local_ (an `account_link` field: Google's own redirect page
-  `https://www.google.com`, the user pastes its address into the
-  `finish_local_connection` action) or _automatic_ (an `oauth2` field through
-  the static Gladys page `https://my.gladysassistant.com/redirect/oauth`, so a
-  Gladys reached over plain HTTP works). The code exchange happens in the
+- **A local connection, without Gladys Plus, any server of the author or a
+  third-party redirect page**: each user brings their own Device Access
+  project and OAuth client. The Connect button (an `account_link` field)
+  opens the Google consent with Google's own page `https://www.google.com` as
+  redirect URI; the user pastes the address it ends on into the
+  `finish_local_connection` action. The code exchange happens in the
   container; the refresh token is stored in the integration config, outside
   the schema.
 - **Sync**: a `devices.list` every few minutes (the source of truth), the

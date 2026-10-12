@@ -12,7 +12,6 @@
 import { createLogger } from '@gladysassistant/integration-sdk';
 import { CameraPictures, NoPictureError } from './camera.js';
 import {
-  LOCAL_ACCOUNT_KEY,
   LOCAL_REDIRECT_URI,
   STORED,
   hasCredentials,
@@ -627,17 +626,14 @@ export class NestApp {
 
   // --- OAuth -----------------------------------------------------------------
   //
-  // Two ways to connect the Google account, both ending with the token
-  // exchange done here, in the container:
-  //   - local (`google_account_local`, an account_link field): Google's own
-  //     redirect URI https://www.google.com, nothing comes back to Gladys;
-  //     the user pastes the address Google ends on into the
-  //     `finish_local_connection` action. No third-party page at all.
-  //   - automatic (`google_account`, an oauth2 field): through the static
-  //     Gladys redirect page my.gladysassistant.com (free, not Gladys Plus),
-  //     or the instance address when Gladys is served over HTTPS.
+  // A local connection only: no Gladys Plus, no third-party redirect page.
+  // The Connect button (`google_account_local`, an account_link field) opens
+  // the Google consent with Google's own page https://www.google.com as
+  // redirect URI; nothing comes back to Gladys, and the user pastes the
+  // address Google ended on into the `finish_local_connection` action. The
+  // code exchange happens here, in the container.
 
-  async authorizeUrl(key, redirectUri) {
+  async authorizeUrl() {
     // The SDK updates gladys.config as soon as the user saves: "Connect"
     // right after "Save" must not wait for the restart.
     const config = normalizeConfig({ ...this.raw, ...this.gladys.config });
@@ -646,19 +642,17 @@ export class NestApp {
         'Fill in the Device Access project ID, the client ID and the client secret, then save, before connecting',
       );
     }
-    const redirect = key === LOCAL_ACCOUNT_KEY ? LOCAL_REDIRECT_URI : redirectUri;
     this.pending = { state: createState(), at: this.now() };
     // Off the critical path: Gladys gives the handler 5 s, and a restart
     // between the two steps must still find the state.
     this.store({
       [STORED.STATE]: this.pending.state,
       [STORED.STATE_AT]: this.pending.at,
-      [STORED.REDIRECT_URI]: redirect,
     }).catch((err) => this.logger.error('Storing the pending authorization failed', err));
     return buildAuthorizeUrl({
       projectId: config.projectId,
       clientId: config.clientId,
-      redirectUri: redirect,
+      redirectUri: LOCAL_REDIRECT_URI,
       state: this.pending.state,
     });
   }
@@ -679,13 +673,13 @@ export class NestApp {
   }
 
   /** Exchange a code, store the refresh token, start in the background. */
-  async completeAuthorization(code, redirectUri) {
+  async completeAuthorization(code) {
     const config = normalizeConfig({ ...this.raw, ...this.gladys.config });
     const answer = await exchangeCode({
       clientId: config.clientId,
       clientSecret: config.clientSecret,
       code,
-      redirectUri,
+      redirectUri: LOCAL_REDIRECT_URI,
     });
     if (!answer.refresh_token) {
       throw new Error(
@@ -697,12 +691,10 @@ export class NestApp {
       [STORED.REFRESH_TOKEN]: answer.refresh_token,
       [STORED.STATE]: '',
       [STORED.STATE_AT]: 0,
-      [STORED.REDIRECT_URI]: redirectUri,
     });
     this.logger.info('Google account connected');
-    // Acknowledge now (5 s budget for the oauth2 relay); the first
-    // devices.list, which also completes the Device Access authorization,
-    // runs in the background.
+    // The first devices.list, which also completes the Device Access
+    // authorization, runs in the background.
     this.timers.setTimeout(
       () =>
         this.start(this.raw, { token: answer }).catch((err) =>
@@ -710,16 +702,6 @@ export class NestApp {
         ),
       0,
     );
-  }
-
-  async oauthCallback(_key, { code, state, redirectUri }) {
-    if (!(await this.isPendingState(state))) {
-      throw new Error('Unknown or expired authorization: click "Connect" again');
-    }
-    if (!code) {
-      throw new Error('Google returned no authorization code');
-    }
-    await this.completeAuthorization(code, redirectUri);
   }
 
   /**
@@ -740,7 +722,7 @@ export class NestApp {
       return T.localExpired;
     }
     try {
-      await this.completeAuthorization(pasted.code, LOCAL_REDIRECT_URI);
+      await this.completeAuthorization(pasted.code);
     } catch (err) {
       this.logger.warn(`Local connection failed: ${err.message}`);
       return T.localFailed(err.message);
@@ -788,7 +770,6 @@ export class NestApp {
         displays: count(KIND.DISPLAY),
       },
       events,
-      redirectUri: this.config.redirectUri,
     });
   }
 }

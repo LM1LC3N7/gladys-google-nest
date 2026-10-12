@@ -99,8 +99,8 @@
         "fr": "Connecter votre compte Google"
       },
       "description": {
-        "en": "Local (recommended, nothing goes through a third-party page): add https://www.google.com as an authorized redirect URI of your OAuth client, click \"Connect\" under \"Google account (local)\", allow the access, then copy the address of the google.com page Google opens at the end and paste it in the \"Finish the local connection\" action below. Automatic: add the redirect URI shown under \"Google account (automatic)\" instead, and click its \"Connect\"; Google then sends your browser back to Gladys through the free static page my.gladysassistant.com (no Gladys Plus needed). Either way, the tokens are exchanged and kept by your Gladys only.",
-        "fr": "Local (recommandé, rien ne passe par une page tierce) : ajoutez https://www.google.com comme URI de redirection autorisée de votre client OAuth, cliquez sur « Connecter » sous « Compte Google (local) », autorisez l'accès, puis copiez l'adresse de la page google.com ouverte par Google à la fin et collez-la dans l'action « Terminer la connexion locale » ci-dessous. Automatique : ajoutez plutôt l'URI de redirection affichée sous « Compte Google (automatique) », et cliquez sur son « Connecter » ; Google renvoie alors votre navigateur vers Gladys via la page statique gratuite my.gladysassistant.com (sans Gladys Plus). Dans les deux cas, les jetons sont échangés et gardés par votre Gladys seulement."
+        "en": "Add https://www.google.com as an authorized redirect URI of your OAuth client. Click \"Connect\" under \"Google account\", allow the access, then copy the address of the google.com page Google opens at the end and paste it in the \"Finish the connection\" action below. Nothing goes through a third-party page nor through Gladys Plus: the tokens are exchanged and kept by your Gladys only.",
+        "fr": "Ajoutez https://www.google.com comme URI de redirection autorisée de votre client OAuth. Cliquez sur « Connecter » sous « Compte Google », autorisez l'accès, puis copiez l'adresse de la page google.com ouverte par Google à la fin et collez-la dans l'action « Terminer la connexion » ci-dessous. Rien ne passe par une page tierce ni par Gladys Plus : les jetons sont échangés et gardés par votre Gladys seulement."
       }
     },
     {
@@ -108,25 +108,12 @@
       "type": "account_link",
       "required": false,
       "label": {
-        "en": "Google account (local)",
-        "fr": "Compte Google (local)"
+        "en": "Google account",
+        "fr": "Compte Google"
       },
       "description": {
-        "en": "Opens the Google consent. At the end, Google shows www.google.com: copy the whole address of that page.",
-        "fr": "Ouvre le consentement Google. À la fin, Google affiche www.google.com : copiez l'adresse complète de cette page."
-      }
-    },
-    {
-      "key": "google_account",
-      "type": "oauth2",
-      "required": false,
-      "label": {
-        "en": "Google account (automatic)",
-        "fr": "Compte Google (automatique)"
-      },
-      "description": {
-        "en": "Sign in, select the homes and devices to share, then allow both permissions: Google sends you back to Gladys.",
-        "fr": "Connectez-vous, cochez les maisons et appareils à partager, puis autorisez les deux accès : Google vous renvoie vers Gladys."
+        "en": "Opens the Google consent: select the homes and devices to share and allow both permissions. At the end, Google shows www.google.com: copy the whole address of that page.",
+        "fr": "Ouvre le consentement Google : cochez les maisons et appareils à partager et autorisez les deux accès. À la fin, Google affiche www.google.com : copiez l'adresse complète de cette page."
       }
     },
     {
@@ -325,12 +312,12 @@
       "key": "finish_local_connection",
       "timeout_seconds": 30,
       "label": {
-        "en": "Finish the local connection",
-        "fr": "Terminer la connexion locale"
+        "en": "Finish the connection",
+        "fr": "Terminer la connexion"
       },
       "description": {
-        "en": "After the local \"Connect\": paste the address of the google.com page Google ended on. The code it holds works once, for a few minutes.",
-        "fr": "Après le « Connecter » local : collez l'adresse de la page google.com sur laquelle Google s'est arrêté. Le code qu'elle contient ne sert qu'une fois, quelques minutes."
+        "en": "After \"Connect\": paste the address of the google.com page Google ended on. The code it holds works once, for a few minutes.",
+        "fr": "Après « Connecter » : collez l'adresse de la page google.com sur laquelle Google s'est arrêté. Le code qu'elle contient ne sert qu'une fois, quelques minutes."
       },
       "fields": [
         {
@@ -356,8 +343,8 @@
         "fr": "Tester la connexion"
       },
       "description": {
-        "en": "Lists the devices Google shares, checks the Pub/Sub subscription and shows the redirect URI in use.",
-        "fr": "Liste les appareils partagés par Google, vérifie l'abonnement Pub/Sub et affiche l'URI de redirection utilisée."
+        "en": "Lists the devices Google shares and checks the Pub/Sub subscription.",
+        "fr": "Liste les appareils partagés par Google et vérifie l'abonnement Pub/Sub."
       }
     }
   ],
