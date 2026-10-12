@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-12
+
 ### Added
 
 - "Google account" button (`oauth2` field): the connection completes by
@@ -52,5 +54,6 @@ the notes of the version's GitHub Release.
 - Scene action "take a Nest snapshot", "Test the connection" button, and
   configurable refresh, snapshot and fan run time.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/LM1LC3N7/gladys-google-nest/releases/tag/v1.0.0
