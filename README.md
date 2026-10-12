@@ -29,11 +29,19 @@ Gladys ◄─ WebSocket ─► this container ── HTTPS ──► smartdevice
                               └── ffmpeg (one JPEG frame of an RTSP stream or of an event clip)
 ```
 
-- **OAuth**: Gladys relays the browser flow (manifest field of type `oauth2`)
-  through its fixed redirect page `https://my.gladysassistant.com/redirect/oauth`,
-  so a Gladys reached over plain HTTP works. The integration builds the
-  Partner Connections Manager URL and exchanges the code; the refresh token
-  is stored in the integration config, outside the schema.
+- **Local first**: Matter-compatible thermostats (Nest Thermostat 2020,
+  Learning Thermostat 4th gen) are better paired with the Gladys Matter
+  integration, fully local. Cameras and the other thermostats have no local
+  interface: this connector uses Google's cloud API.
+- **OAuth, without Gladys Plus nor any server of the author**: each user
+  brings their own Device Access project and OAuth client. Two ways to
+  connect: _local_ (an `account_link` field: Google's own redirect page
+  `https://www.google.com`, the user pastes its address into the
+  `finish_local_connection` action) or _automatic_ (an `oauth2` field through
+  the static Gladys page `https://my.gladysassistant.com/redirect/oauth`, so a
+  Gladys reached over plain HTTP works). The code exchange happens in the
+  container; the refresh token is stored in the integration config, outside
+  the schema.
 - **Sync**: a `devices.list` every few minutes (the source of truth), the
   Pub/Sub events in between, and the state implied by each successful
   command, published at once.

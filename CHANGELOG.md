@@ -13,8 +13,13 @@ the notes of the version's GitHub Release.
 ### Added
 
 - Google account connection through the official Smart Device Management API
-  (your own Device Access project and Google Cloud OAuth client), with the
-  Gladys OAuth relay: works with a Gladys reached over plain HTTP.
+  (your own Device Access project and Google Cloud OAuth client), never
+  through Gladys Plus nor a server of the author. Local connection: Google's
+  own redirect page and a copy and paste of its address into "Finish the local
+  connection". Automatic connection: the Gladys redirect page, which works
+  with a Gladys reached over plain HTTP.
+- Setup guide: Matter-compatible Nest thermostats (2020, Learning 4th gen)
+  can be paired locally with the Gladys Matter integration instead.
 - Thermostats: temperature, humidity, activity (heating, cooling, idle), mode
   (heat, cool, heat · cool, off), heating and cooling setpoints, Eco and fan
   timer.

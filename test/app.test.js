@@ -609,3 +609,78 @@ test('event ages are judged on Google clock, not on a drifting local one', async
   );
   assert.equal(gladys.calls.sceneEvents.length, 1);
 });
+
+test('local connection: Google own redirect URI, pasted address, exchange here', async () => {
+  const { app, gladys, timers } = setup({
+    config: CREDENTIALS,
+    routes: googleRoutes({
+      extra: [
+        [
+          'POST',
+          /oauth2\.googleapis\.com\/token/,
+          (call) =>
+            call.body.grant_type === 'authorization_code'
+              ? tokenAnswer({ refresh_token: 'refresh-local' })
+              : tokenAnswer(),
+        ],
+      ],
+    }),
+  });
+  await app.start(CREDENTIALS);
+  // account_link: Gladys hands no redirect URI.
+  const url = new URL(await app.authorizeUrl('google_account_local', undefined));
+  assert.equal(url.searchParams.get('redirect_uri'), 'https://www.google.com');
+  const state = url.searchParams.get('state');
+
+  const pasted = `https://www.google.com/?state=${state}&code=4%2F0AbCdEfGhIj&scope=https://www.googleapis.com/auth/sdm.service`;
+  const message = await app.finishLocalConnection({ answer: pasted });
+  assert.match(message.en, /connected/);
+  const exchange = fake.calls.find((c) => c.body?.grant_type === 'authorization_code');
+  assert.equal(exchange.body.code, '4/0AbCdEfGhIj');
+  assert.equal(exchange.body.redirect_uri, 'https://www.google.com');
+  assert.equal(gladys.config[STORED.REFRESH_TOKEN], 'refresh-local');
+  await timers.runTimeouts();
+  assert.equal(gladys.calls.discovered.length, 1);
+});
+
+test('local connection: a bare code works, a foreign state or an error does not', async () => {
+  const { app } = setup({
+    config: CREDENTIALS,
+    routes: [['POST', /token/, () => tokenAnswer({ refresh_token: 'r' })]],
+  });
+  await app.start(CREDENTIALS);
+  await app.authorizeUrl('google_account_local');
+  assert.match(
+    (
+      await app.finishLocalConnection({
+        answer: 'https://www.google.com/?state=forged&code=4/abcdefghijk',
+      })
+    ).en,
+    /older or unknown/,
+  );
+  assert.match(
+    (await app.finishLocalConnection({ answer: 'https://www.google.com/?error=access_denied' })).en,
+    /did not grant/,
+  );
+  assert.match(
+    (await app.finishLocalConnection({ answer: 'hello world' })).en,
+    /No authorization code/,
+  );
+  assert.match((await app.finishLocalConnection({ answer: '4/0AbCdEfGhIjKl' })).en, /connected/);
+});
+
+test('local connection: a refused code says what to check', async () => {
+  const { app } = setup({
+    config: CREDENTIALS,
+    routes: [
+      [
+        'POST',
+        /token/,
+        () => json({ error: 'invalid_grant', error_description: 'Bad Request' }, 400),
+      ],
+    ],
+  });
+  await app.start(CREDENTIALS);
+  const message = await app.finishLocalConnection({ answer: '4/0AbCdEfGhIjKl' });
+  assert.match(message.en, /https:\/\/www\.google\.com is an authorized redirect URI/);
+});

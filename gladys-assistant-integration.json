@@ -21,8 +21,8 @@
         "fr": "Votre projet Google Device Access"
       },
       "description": {
-        "en": "Unofficial connector, not affiliated with Google. It uses the official Smart Device Management API, through your own Device Access project (a one-time US$5 fee charged by Google) and your own Google Cloud OAuth client: follow the setup guide step by step. In the OAuth client, add the redirect URI shown below the Connect button, and publish the OAuth consent screen (\"In production\"), otherwise Google disconnects you every 7 days.",
-        "fr": "Connecteur non officiel, sans lien avec Google. Il utilise l'API officielle Smart Device Management, via votre propre projet Device Access (5 $ US facturés une fois par Google) et votre propre client OAuth Google Cloud : suivez le guide d'installation pas à pas. Dans le client OAuth, ajoutez l'URI de redirection affichée sous le bouton Connecter, et publiez l'écran de consentement OAuth (« En production »), sinon Google vous déconnecte tous les 7 jours."
+        "en": "Unofficial connector, not affiliated with Google. Thermostats compatible with Matter (Nest Thermostat 2020, Nest Learning Thermostat 4th gen) can be paired locally with the Matter integration of Gladys instead, without any Google account. This connector uses the official Smart Device Management API, through your own Device Access project (a one-time US$5 fee charged by Google) and your own Google Cloud OAuth client: follow the setup guide step by step, and publish the OAuth consent screen (\"In production\"), otherwise Google disconnects you every 7 days.",
+        "fr": "Connecteur non officiel, sans lien avec Google. Les thermostats compatibles Matter (Nest Thermostat 2020, Nest Learning Thermostat 4e génération) peuvent plutôt être appairés en local avec l'intégration Matter de Gladys, sans compte Google. Ce connecteur utilise l'API officielle Smart Device Management, via votre propre projet Device Access (5 $ US facturés une fois par Google) et votre propre client OAuth Google Cloud : suivez le guide d'installation pas à pas, et publiez l'écran de consentement OAuth (« En production »), sinon Google vous déconnecte tous les 7 jours."
       },
       "links": [
         {
@@ -92,16 +92,41 @@
       }
     },
     {
-      "key": "google_account",
-      "type": "oauth2",
-      "required": true,
+      "key": "account",
+      "type": "section",
       "label": {
-        "en": "Google account",
-        "fr": "Compte Google"
+        "en": "Connect your Google account",
+        "fr": "Connecter votre compte Google"
       },
       "description": {
-        "en": "Sign in with the Google account of your Nest devices, select the homes and devices to share, then allow both permissions.",
-        "fr": "Connectez-vous avec le compte Google de vos appareils Nest, cochez les maisons et appareils à partager, puis autorisez les deux accès."
+        "en": "Local (recommended, nothing goes through a third-party page): add https://www.google.com as an authorized redirect URI of your OAuth client, click \"Connect\" under \"Google account (local)\", allow the access, then copy the address of the google.com page Google opens at the end and paste it in the \"Finish the local connection\" action below. Automatic: add the redirect URI shown under \"Google account (automatic)\" instead, and click its \"Connect\"; Google then sends your browser back to Gladys through the free static page my.gladysassistant.com (no Gladys Plus needed). Either way, the tokens are exchanged and kept by your Gladys only.",
+        "fr": "Local (recommandé, rien ne passe par une page tierce) : ajoutez https://www.google.com comme URI de redirection autorisée de votre client OAuth, cliquez sur « Connecter » sous « Compte Google (local) », autorisez l'accès, puis copiez l'adresse de la page google.com ouverte par Google à la fin et collez-la dans l'action « Terminer la connexion locale » ci-dessous. Automatique : ajoutez plutôt l'URI de redirection affichée sous « Compte Google (automatique) », et cliquez sur son « Connecter » ; Google renvoie alors votre navigateur vers Gladys via la page statique gratuite my.gladysassistant.com (sans Gladys Plus). Dans les deux cas, les jetons sont échangés et gardés par votre Gladys seulement."
+      }
+    },
+    {
+      "key": "google_account_local",
+      "type": "account_link",
+      "required": false,
+      "label": {
+        "en": "Google account (local)",
+        "fr": "Compte Google (local)"
+      },
+      "description": {
+        "en": "Opens the Google consent. At the end, Google shows www.google.com: copy the whole address of that page.",
+        "fr": "Ouvre le consentement Google. À la fin, Google affiche www.google.com : copiez l'adresse complète de cette page."
+      }
+    },
+    {
+      "key": "google_account",
+      "type": "oauth2",
+      "required": false,
+      "label": {
+        "en": "Google account (automatic)",
+        "fr": "Compte Google (automatique)"
+      },
+      "description": {
+        "en": "Sign in, select the homes and devices to share, then allow both permissions: Google sends you back to Gladys.",
+        "fr": "Connectez-vous, cochez les maisons et appareils à partager, puis autorisez les deux accès : Google vous renvoie vers Gladys."
       }
     },
     {
@@ -296,6 +321,33 @@
     }
   ],
   "actions": [
+    {
+      "key": "finish_local_connection",
+      "timeout_seconds": 30,
+      "label": {
+        "en": "Finish the local connection",
+        "fr": "Terminer la connexion locale"
+      },
+      "description": {
+        "en": "After the local \"Connect\": paste the address of the google.com page Google ended on. The code it holds works once, for a few minutes.",
+        "fr": "Après le « Connecter » local : collez l'adresse de la page google.com sur laquelle Google s'est arrêté. Le code qu'elle contient ne sert qu'une fois, quelques minutes."
+      },
+      "fields": [
+        {
+          "key": "answer",
+          "type": "string",
+          "required": true,
+          "label": {
+            "en": "Address of the google.com page",
+            "fr": "Adresse de la page google.com"
+          },
+          "placeholder": {
+            "en": "https://www.google.com/?state=…&code=…",
+            "fr": "https://www.google.com/?state=…&code=…"
+          }
+        }
+      ]
+    },
     {
       "key": "test_connection",
       "timeout_seconds": 30,

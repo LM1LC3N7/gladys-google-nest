@@ -27,10 +27,26 @@ tirée de l'aperçu vidéo de l'événement, sans image en direct.
 capteurs de température Nest, Learning Thermostat 1re et 2e génération
 (abandonnés par Google le 25/10/2025), comptes Google Workspace.
 
+## Le local d'abord : thermostats Matter
+
+Le **Nest Thermostat (2020)** et le **Nest Learning Thermostat (4e
+génération)** parlent Matter : appairez-les avec l'**intégration Matter de
+Gladys**, entièrement en local, sans lier de compte Google, sans frais Device
+Access et sans Internet ensuite. Dans l'application Google Home, ouvrez le
+thermostat, **Paramètres → Applis et services Matter associés → Associer des
+applis et services**, et saisissez le code d'appairage dans Gladys. Matter
+donne l'essentiel (température, consigne, mode) ; Eco, ventilateur, humidité
+et toutes les caméras demandent ce connecteur.
+
+Les caméras, sonnettes et autres thermostats Nest n'ont aucune interface
+locale : l'API cloud de Google est le seul moyen, ci-dessous.
+
 ## Installation
 
 Google impose **votre propre** projet Device Access et **votre propre**
-client OAuth Google Cloud : comptez 20 minutes, une seule fois.
+client OAuth Google Cloud : comptez 20 minutes, une seule fois. Rien ne passe
+par l'auteur de ce connecteur ni par Gladys Plus : chaque Gladys parle à
+Google avec les identifiants de son propriétaire.
 
 ### 1. S'inscrire à Device Access (5 $ US, une fois)
 
@@ -53,9 +69,11 @@ conditions et payez les 5 $ US uniques. Gardez cet onglet ouvert.
    cliquez sur « Continuer ».
 4. **API et services → Identifiants → Créer des identifiants → ID client
    OAuth**, type **Application Web**. Sous **URI de redirection autorisés**,
-   ajoutez l'URI de redirection que Gladys affiche sous le bouton
-   **Connecter**, en général `https://my.gladysassistant.com/redirect/oauth`.
-   Copiez l'**ID client** et le **code secret du client**.
+   ajoutez `https://www.google.com` (connexion locale, étape 5) et, si vous
+   voulez aussi la connexion automatique, l'URI de redirection que Gladys
+   affiche sous « Compte Google (automatique) », en général
+   `https://my.gladysassistant.com/redirect/oauth`. Copiez l'**ID client** et
+   le **code secret du client**.
 
 ### 3. Créer le sujet Pub/Sub (pour les événements)
 
@@ -84,11 +102,21 @@ UUID du type `32c4b0a1-…`, pas l'ID du projet Cloud).
 2. Renseignez l'**ID du projet Device Access**, l'**ID client OAuth**, le
    **code secret du client** et, pour les événements, le **sujet Pub/Sub**.
    Enregistrez.
-3. Cliquez sur **Connecter** : connectez-vous avec votre compte Google,
-   cochez les maisons et appareils à partager, puis autorisez les **deux**
-   accès (appareils, et événements via Pub/Sub).
-4. De retour dans Gladys, l'état passe au vert. Ouvrez **Découverte** et
-   créez les appareils voulus.
+3. **Connexion locale** (recommandée) : cliquez sur **Connecter** sous
+   « Compte Google (local) ». Connectez-vous avec votre compte Google, cochez
+   les maisons et appareils à partager, puis autorisez les **deux** accès
+   (appareils, et événements via Pub/Sub). Google termine sur la page
+   www.google.com : copiez l'**adresse complète** depuis la barre d'adresse
+   (elle contient `code=`), collez-la dans l'action **Terminer la connexion
+   locale** et lancez-la. Le code ne sert qu'une fois, quelques minutes.
+4. Ou **connexion automatique** : cliquez sur **Connecter** sous « Compte
+   Google (automatique) ». Google renvoie votre navigateur vers Gladys via la
+   page statique gratuite `my.gladysassistant.com` (tenue par le projet
+   Gladys, sans Gladys Plus), ou directement vers votre Gladys si elle est
+   servie en HTTPS et que vous avez coché « utiliser l'adresse de mon
+   instance ».
+5. L'état passe au vert. Ouvrez **Découverte** et créez les appareils
+   voulus.
 
 L'intégration crée son propre abonnement Pub/Sub, `gladys-google-nest`, sur
 votre sujet. Vous pouvez aussi donner un abonnement existant
@@ -111,8 +139,9 @@ vérifie l'abonnement Pub/Sub et affiche l'URI de redirection utilisée.
 
 ## Dépannage
 
-- **« redirect_uri_mismatch »** : l'URI de redirection déclarée dans le
-  client OAuth doit être exactement celle affichée par Gladys (étape 2.4).
+- **« redirect_uri_mismatch »** : le client OAuth doit lister l'URI de
+  redirection de la connexion utilisée : `https://www.google.com` pour la
+  locale, celle affichée par Gladys pour l'automatique (étape 2.4).
 - **Déconnecté tous les 7 jours** : l'écran de consentement OAuth est encore
   en « Test » : publiez-le (étape 2.3), puis reconnectez-vous.
 - **Connecté mais aucun appareil** : cliquez de nouveau sur **Connecter** et
@@ -127,9 +156,10 @@ vérifie l'abonnement Pub/Sub et affiche l'URI de redirection utilisée.
 
 ## Confidentialité
 
-L'intégration parle directement à Google, avec vos propres identifiants.
-L'auteur de l'intégration ne voit jamais vos appareils. À la connexion,
-Google renvoie votre navigateur vers Gladys via la page statique
-`my.gladysassistant.com`, qui ne transporte que le code d'autorisation
-(inutile sans votre code secret, qui ne quitte jamais votre Gladys). Les
-jetons sont stockés dans la configuration de l'intégration de votre Gladys.
+L'intégration parle directement à Google, avec vos propres identifiants :
+aucun serveur de l'auteur, pas de Gladys Plus. Avec la connexion locale, le
+code d'autorisation passe de la page de Google à Gladys par votre propre
+copier-coller. Avec l'automatique, Google renvoie votre navigateur via la
+page statique `my.gladysassistant.com`, qui ne voit que le code
+d'autorisation (inutile sans votre code secret, qui ne quitte jamais votre
+Gladys). Les jetons sont échangés et stockés par votre Gladys seulement.

@@ -24,12 +24,13 @@ gladys.onSetValue((device, feature, value) => {
 // --- Camera picture, awaited under 15 s ---------------------------------------
 gladys.onGetImage((device) => app.getImage(device));
 
-// --- OAuth: Gladys relays the browser flow, each step acked under 5 s -------
+// --- OAuth: the local and the automatic Connect buttons (acked under 5 s) ---
 gladys.onOAuthAuthorizeUrl((key, redirectUri) => app.authorizeUrl(key, redirectUri));
 gladys.onOAuthCallback((key, payload) => app.oauthCallback(key, payload));
 
 // --- Configuration screen button ---------------------------------------------
 gladys.onAction('test_connection', () => app.testConnection());
+gladys.onAction('finish_local_connection', (fields) => app.finishLocalConnection(fields));
 
 // --- Scene action ------------------------------------------------------------
 gladys.onSceneAction('take_snapshot', (fields) => app.takeSnapshot(fields));

@@ -65,6 +65,10 @@ Pub/Sub gRPC client about 90 MB, in a 256 MB sandbox, for six REST calls.
   (`thermostat`, `camera`, `doorbell`, `display`) and the off-schema config
   keys (`oauth_refresh_token`…) are stored in user scenes, dashboards and
   configs. Never rename them.
+- **No hosted service**: authentication must work for anyone with only a
+  local Gladys. Never depend on Gladys Plus or on a server of the author;
+  keep the local connection (`google_account_local`, redirect
+  `https://www.google.com`, pasted into `finish_local_connection`) working.
 - **Gladys acks the OAuth relays within 5 s**: `onOAuthCallback` exchanges
   the code, stores the refresh token, acks, and reads the devices in the
   background. Never hardcode the redirect URI: use the one Gladys hands over,
