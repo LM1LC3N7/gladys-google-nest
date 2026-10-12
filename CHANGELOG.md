@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-12
+
 ### Added
 
 - Local Google account connection through the official Smart Device
@@ -31,3 +33,6 @@ the notes of the version's GitHub Release.
   detected" and "sound detected".
 - Scene action "take a Nest snapshot", "Test the connection" button, and
   configurable refresh, snapshot and fan run time.
+
+[Unreleased]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/LM1LC3N7/gladys-google-nest/releases/tag/v1.0.0
