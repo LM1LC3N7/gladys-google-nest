@@ -1,0 +1,82 @@
+{
+  "devices": [
+    {
+      "name": "enterprises/project-id/devices/THERMO-1",
+      "type": "sdm.devices.types.THERMOSTAT",
+      "assignee": "enterprises/project-id/structures/S1/rooms/R1",
+      "traits": {
+        "sdm.devices.traits.Info": { "customName": "" },
+        "sdm.devices.traits.Humidity": { "ambientHumidityPercent": 41 },
+        "sdm.devices.traits.Connectivity": { "status": "ONLINE" },
+        "sdm.devices.traits.Fan": { "timerMode": "OFF" },
+        "sdm.devices.traits.ThermostatMode": {
+          "mode": "HEAT",
+          "availableModes": ["HEAT", "COOL", "HEATCOOL", "OFF"]
+        },
+        "sdm.devices.traits.ThermostatEco": {
+          "availableModes": ["OFF", "MANUAL_ECO"],
+          "mode": "OFF",
+          "heatCelsius": 15.5,
+          "coolCelsius": 26.5
+        },
+        "sdm.devices.traits.ThermostatHvac": { "status": "HEATING" },
+        "sdm.devices.traits.Settings": { "temperatureScale": "CELSIUS" },
+        "sdm.devices.traits.ThermostatTemperatureSetpoint": { "heatCelsius": 20.5 },
+        "sdm.devices.traits.Temperature": { "ambientTemperatureCelsius": 19.84 }
+      },
+      "parentRelations": [
+        {
+          "parent": "enterprises/project-id/structures/S1/rooms/R1",
+          "displayName": "Living Room"
+        }
+      ]
+    },
+    {
+      "name": "enterprises/project-id/devices/CAM-RTSP",
+      "type": "sdm.devices.types.CAMERA",
+      "traits": {
+        "sdm.devices.traits.Info": { "customName": "Garage" },
+        "sdm.devices.traits.CameraLiveStream": {
+          "maxVideoResolution": { "width": 1920, "height": 1080 },
+          "videoCodecs": ["H264"],
+          "audioCodecs": ["AAC"],
+          "supportedProtocols": ["RTSP"]
+        },
+        "sdm.devices.traits.CameraImage": {
+          "maxImageResolution": { "width": 1920, "height": 1080 }
+        },
+        "sdm.devices.traits.CameraEventImage": {},
+        "sdm.devices.traits.CameraMotion": {},
+        "sdm.devices.traits.CameraPerson": {},
+        "sdm.devices.traits.CameraSound": {}
+      },
+      "parentRelations": [
+        { "parent": "enterprises/project-id/structures/S1/rooms/R2", "displayName": "Garage" }
+      ]
+    },
+    {
+      "name": "enterprises/project-id/devices/DOORBELL-WEBRTC",
+      "type": "sdm.devices.types.DOORBELL",
+      "traits": {
+        "sdm.devices.traits.Info": { "customName": "" },
+        "sdm.devices.traits.CameraLiveStream": {
+          "videoCodecs": ["H264"],
+          "audioCodecs": ["OPUS"],
+          "supportedProtocols": ["WEB_RTC"]
+        },
+        "sdm.devices.traits.CameraClipPreview": {},
+        "sdm.devices.traits.CameraMotion": {},
+        "sdm.devices.traits.CameraPerson": {},
+        "sdm.devices.traits.DoorbellChime": {}
+      },
+      "parentRelations": [
+        { "parent": "enterprises/project-id/structures/S1/rooms/R3", "displayName": "Entryway" }
+      ]
+    },
+    {
+      "name": "enterprises/project-id/devices/SPEAKER",
+      "type": "sdm.devices.types.SPEAKER",
+      "traits": {}
+    }
+  ]
+}

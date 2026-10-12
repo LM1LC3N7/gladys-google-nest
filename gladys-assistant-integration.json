@@ -1,0 +1,486 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Google Nest",
+  "description": {
+    "en": "Unofficial connector: Nest thermostats, cameras and doorbells, with their events.",
+    "fr": "Connecteur non officiel : thermostats, caméras et sonnettes Nest, avec leurs événements."
+  },
+  "version": "0.0.0",
+  "docker_image": "ghcr.io/lm1lc3n7/gladys-google-nest:0.0.0",
+  "gladys_version": ">=5.1.0",
+  "cover_image": "https://raw.githubusercontent.com/LM1LC3N7/gladys-google-nest/main/cover.png",
+  "categories": ["climate", "security"],
+  "transports": ["cloud"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": {
+        "en": "Your Google Device Access project",
+        "fr": "Votre projet Google Device Access"
+      },
+      "description": {
+        "en": "Unofficial connector, not affiliated with Google. It uses the official Smart Device Management API, through your own Device Access project (a one-time US$5 fee charged by Google) and your own Google Cloud OAuth client: follow the setup guide step by step. In the OAuth client, add the redirect URI shown below the Connect button, and publish the OAuth consent screen (\"In production\"), otherwise Google disconnects you every 7 days.",
+        "fr": "Connecteur non officiel, sans lien avec Google. Il utilise l'API officielle Smart Device Management, via votre propre projet Device Access (5 $ US facturés une fois par Google) et votre propre client OAuth Google Cloud : suivez le guide d'installation pas à pas. Dans le client OAuth, ajoutez l'URI de redirection affichée sous le bouton Connecter, et publiez l'écran de consentement OAuth (« En production »), sinon Google vous déconnecte tous les 7 jours."
+      },
+      "links": [
+        {
+          "url": "https://github.com/LM1LC3N7/gladys-google-nest/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide (English)",
+            "fr": "Guide d'installation (anglais)"
+          }
+        },
+        {
+          "url": "https://github.com/LM1LC3N7/gladys-google-nest/blob/main/docs/fr.md",
+          "label": {
+            "en": "Setup guide (French)",
+            "fr": "Guide d'installation (français)"
+          }
+        },
+        {
+          "url": "https://console.nest.google.com/device-access",
+          "label": {
+            "en": "Device Access console",
+            "fr": "Console Device Access"
+          }
+        }
+      ]
+    },
+    {
+      "key": "project_id",
+      "type": "string",
+      "required": true,
+      "label": {
+        "en": "Device Access project ID",
+        "fr": "ID du projet Device Access"
+      },
+      "description": {
+        "en": "The UUID shown in the Device Access console, not the Google Cloud project ID.",
+        "fr": "L'UUID affiché dans la console Device Access, pas l'ID du projet Google Cloud."
+      },
+      "placeholder": {
+        "en": "32c4b0a1-…",
+        "fr": "32c4b0a1-…"
+      }
+    },
+    {
+      "key": "client_id",
+      "type": "string",
+      "required": true,
+      "label": {
+        "en": "OAuth client ID",
+        "fr": "ID client OAuth"
+      },
+      "description": {
+        "en": "Google Cloud console > APIs & Services > Credentials, client of type \"Web application\".",
+        "fr": "Console Google Cloud > API et services > Identifiants, client de type « Application Web »."
+      },
+      "placeholder": {
+        "en": "123-abc.apps.googleusercontent.com",
+        "fr": "123-abc.apps.googleusercontent.com"
+      }
+    },
+    {
+      "key": "client_secret",
+      "type": "secret",
+      "required": true,
+      "label": {
+        "en": "OAuth client secret",
+        "fr": "Code secret du client OAuth"
+      }
+    },
+    {
+      "key": "google_account",
+      "type": "oauth2",
+      "required": true,
+      "label": {
+        "en": "Google account",
+        "fr": "Compte Google"
+      },
+      "description": {
+        "en": "Sign in with the Google account of your Nest devices, select the homes and devices to share, then allow both permissions.",
+        "fr": "Connectez-vous avec le compte Google de vos appareils Nest, cochez les maisons et appareils à partager, puis autorisez les deux accès."
+      }
+    },
+    {
+      "key": "events",
+      "type": "section",
+      "label": {
+        "en": "Real-time events",
+        "fr": "Événements en temps réel"
+      },
+      "description": {
+        "en": "Doorbell presses, motion, persons, sounds and instant thermostat updates come through a Pub/Sub topic of your Google Cloud project. Without it, the thermostats are refreshed periodically and the cameras send no events.",
+        "fr": "Les appuis de sonnette, mouvements, personnes, sons et mises à jour instantanées des thermostats passent par un sujet Pub/Sub de votre projet Google Cloud. Sans lui, les thermostats sont rafraîchis périodiquement et les caméras n'envoient aucun événement."
+      }
+    },
+    {
+      "key": "pubsub",
+      "type": "string",
+      "required": false,
+      "label": {
+        "en": "Pub/Sub topic",
+        "fr": "Sujet Pub/Sub"
+      },
+      "description": {
+        "en": "The topic entered in the Device Access console: the integration creates its own subscription \"gladys-google-nest\" on it. A subscription (projects/…/subscriptions/…) is accepted too.",
+        "fr": "Le sujet saisi dans la console Device Access : l'intégration y crée son propre abonnement « gladys-google-nest ». Un abonnement (projects/…/subscriptions/…) est aussi accepté."
+      },
+      "placeholder": {
+        "en": "projects/my-project/topics/nest-events",
+        "fr": "projects/mon-projet/topics/nest-events"
+      }
+    },
+    {
+      "key": "options",
+      "type": "section",
+      "label": {
+        "en": "Options",
+        "fr": "Options"
+      }
+    },
+    {
+      "key": "refresh_interval",
+      "type": "select",
+      "required": false,
+      "default": "5",
+      "label": {
+        "en": "Refresh the devices",
+        "fr": "Rafraîchir les appareils"
+      },
+      "description": {
+        "en": "A full read of every device, on top of the events. Google allows 5 reads a minute.",
+        "fr": "Une lecture complète de tous les appareils, en plus des événements. Google autorise 5 lectures par minute."
+      },
+      "options": [
+        {
+          "value": "1",
+          "label": {
+            "en": "Every minute",
+            "fr": "Toutes les minutes"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "en": "Every 2 minutes",
+            "fr": "Toutes les 2 minutes"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "en": "Every 5 minutes",
+            "fr": "Toutes les 5 minutes"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "Every 15 minutes",
+            "fr": "Toutes les 15 minutes"
+          }
+        }
+      ]
+    },
+    {
+      "key": "snapshot_interval",
+      "type": "select",
+      "required": false,
+      "default": "0",
+      "label": {
+        "en": "Refresh the camera pictures",
+        "fr": "Rafraîchir les images des caméras"
+      },
+      "description": {
+        "en": "Live pictures only exist for RTSP cameras (older Nest Cams, Nest Hub Max, wired doorbell). Newer cameras show the picture of their last event.",
+        "fr": "Les images en direct n'existent que pour les caméras RTSP (anciennes Nest Cam, Nest Hub Max, sonnette filaire). Les caméras récentes affichent l'image de leur dernier événement."
+      },
+      "options": [
+        {
+          "value": "0",
+          "label": {
+            "en": "Only on events and on request",
+            "fr": "Seulement sur événement et à la demande"
+          }
+        },
+        {
+          "value": "10",
+          "label": {
+            "en": "Every 10 minutes",
+            "fr": "Toutes les 10 minutes"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "Every 30 minutes",
+            "fr": "Toutes les 30 minutes"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "Every hour",
+            "fr": "Toutes les heures"
+          }
+        }
+      ]
+    },
+    {
+      "key": "fan_duration",
+      "type": "select",
+      "required": false,
+      "default": "15",
+      "label": {
+        "en": "Fan run time",
+        "fr": "Durée de ventilation"
+      },
+      "description": {
+        "en": "How long the fan runs when you turn it on from Gladys.",
+        "fr": "Combien de temps le ventilateur tourne quand vous l'allumez depuis Gladys."
+      },
+      "options": [
+        {
+          "value": "15",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "1 hour",
+            "fr": "1 heure"
+          }
+        },
+        {
+          "value": "120",
+          "label": {
+            "en": "2 hours",
+            "fr": "2 heures"
+          }
+        },
+        {
+          "value": "240",
+          "label": {
+            "en": "4 hours",
+            "fr": "4 heures"
+          }
+        },
+        {
+          "value": "480",
+          "label": {
+            "en": "8 hours",
+            "fr": "8 heures"
+          }
+        },
+        {
+          "value": "720",
+          "label": {
+            "en": "12 hours",
+            "fr": "12 heures"
+          }
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "key": "test_connection",
+      "timeout_seconds": 30,
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion"
+      },
+      "description": {
+        "en": "Lists the devices Google shares, checks the Pub/Sub subscription and shows the redirect URI in use.",
+        "fr": "Liste les appareils partagés par Google, vérifie l'abonnement Pub/Sub et affiche l'URI de redirection utilisée."
+      }
+    }
+  ],
+  "scene_triggers": [
+    {
+      "key": "doorbell_pressed",
+      "label": {
+        "en": "Nest doorbell pressed",
+        "fr": "Appui sur une sonnette Nest"
+      },
+      "description": {
+        "en": "Someone pressed the button of a Nest doorbell (needs the Pub/Sub topic).",
+        "fr": "Quelqu'un a appuyé sur le bouton d'une sonnette Nest (demande le sujet Pub/Sub)."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Doorbell",
+            "fr": "Sonnette"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Doorbell name",
+            "fr": "Nom de la sonnette"
+          }
+        }
+      ]
+    },
+    {
+      "key": "motion_detected",
+      "label": {
+        "en": "Nest motion detected",
+        "fr": "Mouvement détecté par Nest"
+      },
+      "description": {
+        "en": "A Nest camera or doorbell detected motion (needs the Pub/Sub topic).",
+        "fr": "Une caméra ou sonnette Nest a détecté un mouvement (demande le sujet Pub/Sub)."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Camera name",
+            "fr": "Nom de la caméra"
+          }
+        }
+      ]
+    },
+    {
+      "key": "person_detected",
+      "label": {
+        "en": "Nest person detected",
+        "fr": "Personne détectée par Nest"
+      },
+      "description": {
+        "en": "A Nest camera or doorbell saw a person (needs the Pub/Sub topic).",
+        "fr": "Une caméra ou sonnette Nest a vu une personne (demande le sujet Pub/Sub)."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Camera name",
+            "fr": "Nom de la caméra"
+          }
+        }
+      ]
+    },
+    {
+      "key": "sound_detected",
+      "label": {
+        "en": "Nest sound detected",
+        "fr": "Son détecté par Nest"
+      },
+      "description": {
+        "en": "A Nest camera heard a sound (needs the Pub/Sub topic and sound detection on in the Google Home app).",
+        "fr": "Une caméra Nest a entendu un son (demande le sujet Pub/Sub et la détection des sons dans l'application Google Home)."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Camera name",
+            "fr": "Nom de la caméra"
+          }
+        }
+      ]
+    }
+  ],
+  "scene_actions": [
+    {
+      "key": "take_snapshot",
+      "timeout_seconds": 30,
+      "label": {
+        "en": "Take a Nest snapshot",
+        "fr": "Prendre un instantané Nest"
+      },
+      "description": {
+        "en": "Refreshes the picture of a Nest camera, ready for a following \"send a camera image\" action. Newer cameras keep the picture of their last event.",
+        "fr": "Rafraîchit l'image d'une caméra Nest, prête pour une action « envoyer l'image d'une caméra » qui suit. Les caméras récentes gardent l'image de leur dernier événement."
+      },
+      "fields": [
+        {
+          "key": "camera",
+          "type": "select",
+          "source": "devices",
+          "required": true,
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "key": "captured",
+          "type": "boolean",
+          "label": {
+            "en": "Picture refreshed",
+            "fr": "Image rafraîchie"
+          }
+        },
+        {
+          "key": "taken_at",
+          "type": "string",
+          "label": {
+            "en": "Taken at",
+            "fr": "Prise à"
+          }
+        }
+      ]
+    }
+  ]
+}
