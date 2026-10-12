@@ -10,6 +10,13 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Changed
+
+- Configuration screen as a numbered checklist (1. before you start, 2. Cloud
+  project with direct links to enable the APIs, the consent screen and the
+  credentials, 3. Device Access project, 4. connect, 5. events), the local
+  connection and the existing topic moved to a final "Advanced" section.
+
 ## [1.1.0] - 2026-10-12
 
 ### Added
