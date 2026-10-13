@@ -6,8 +6,8 @@
     "en": "Unofficial connector: Nest thermostats, cameras and doorbells, with their events.",
     "fr": "Connecteur non officiel : thermostats, caméras et sonnettes Nest, avec leurs événements."
   },
-  "version": "1.1.1",
-  "docker_image": "ghcr.io/lm1lc3n7/gladys-google-nest:1.1.1",
+  "version": "1.1.2",
+  "docker_image": "ghcr.io/lm1lc3n7/gladys-google-nest:1.1.2",
   "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/LM1LC3N7/gladys-google-nest/main/cover.png",
   "categories": ["climate", "security"],

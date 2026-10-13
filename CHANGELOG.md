@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-13
+
 ### Changed
 
 - Shared tooling of the LM1LC3N7 Gladys integrations: CI on Node 22 and 24 with `npm audit`, Release workflow driven by this changelog, GitHub Releases from its sections, grouped Dependabot updates.
@@ -68,7 +70,8 @@ the notes of the version's GitHub Release.
 - Scene action "take a Nest snapshot", "Test the connection" button, and
   configurable refresh, snapshot and fan run time.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/LM1LC3N7/gladys-google-nest/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/LM1LC3N7/gladys-google-nest/releases/tag/v1.0.0
