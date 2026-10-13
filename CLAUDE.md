@@ -7,7 +7,7 @@ human contributors.
 
 A Gladys Assistant **external integration** of type `device`: a Node.js
 service (Node 22+, ESM, no build step) in its own sandboxed Docker container,
-talking to Gladys through `@gladysassistant/integration-sdk` (v0.14). It
+talking to Gladys through `@gladysassistant/integration-sdk` (v0.15). It
 brings the Google Nest thermostats, cameras, doorbells and displays into
 Gladys through the official **Smart Device Management (SDM) API**, with the
 user's own Device Access project and Google Cloud OAuth client, and the
